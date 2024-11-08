@@ -10,7 +10,7 @@
     "build-panda": "panda codegen --silent",
     "build-uikit": "cd ../uikit && pnpm build",
     "coverage": "vitest run --coverage ./src",
-    "dev": "rm -rf ./.next && next dev",
+    "dev": "rm -rf ./.next && next dev -p 4000",
     "fmt": "dprint fmt **/*.{ts,tsx,js,json,html,md}",
     "lint": "pnpm oxlint ./src --import-plugin --nextjs-plugin --react-perf-plugin --allow pedantic",
     "test": "vitest",
