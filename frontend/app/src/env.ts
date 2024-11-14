@@ -6,6 +6,7 @@ import * as v from "valibot";
 
 export const CollateralSymbolSchema = v.union([
   v.literal("ETH"),
+  v.literal("SPOT"),
   v.literal("RETH"),
   v.literal("WSTETH"),
 ]);

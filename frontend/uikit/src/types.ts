@@ -4,6 +4,7 @@ export type Direction = -1 | 1;
 
 export type TokenSymbol =
   | "BOLD"
+  | "SPOT"
   | "ETH"
   | "LQTY"
   | "RETH"

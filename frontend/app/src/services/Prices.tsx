@@ -38,6 +38,7 @@ const initialPrices: Prices = {
   ETH: null,
   RETH: null,
   WSTETH: null,
+  SPOT: null,
 };
 
 const PRICE_REFRESH_INTERVAL = 60_000;
@@ -108,6 +109,7 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
   const ethPrice = useWatchCollateralPrice("ETH");
   const rethPrice = useWatchCollateralPrice("RETH");
   const wstethPrice = useWatchCollateralPrice("WSTETH");
+  const spotPrice = useWatchCollateralPrice("SPOT");
   const lqtyPrice = useCoinGeckoPrice("LQTY");
   const lusdPrice = useCoinGeckoPrice("LUSD");
 
@@ -118,6 +120,7 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
     ETH: null,
     RETH: null,
     WSTETH: null,
+    SPOT: null,
   });
 
   useEffect(() => {
@@ -129,6 +132,7 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
       ETH: ethPrice.data ? dnum18(ethPrice.data) : null,
       RETH: rethPrice.data ? dnum18(rethPrice.data) : null,
       WSTETH: wstethPrice.data ? dnum18(wstethPrice.data) : null,
+      SPOT: spotPrice.data ? dnum18(spotPrice.data) : null,
     };
 
     const hasChanged = jsonStringifyWithDnum(newPrices) !== jsonStringifyWithDnum(prevPrices.current);
@@ -160,6 +164,7 @@ if (DEMO_MODE) {
           ETH: dn.add(DEMO_ETH_PRICE, dn.mul(DEMO_ETH_PRICE, variation())),
           RETH: dn.add(DEMO_RETH_PRICE, dn.mul(DEMO_RETH_PRICE, variation())),
           WSTETH: dn.add(DEMO_WSTETH_PRICE, dn.mul(DEMO_WSTETH_PRICE, variation())),
+          SPOT: dn.add(DEMO_WSTETH_PRICE, dn.mul(DEMO_WSTETH_PRICE, variation())),
         });
       };
 

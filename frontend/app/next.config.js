@@ -9,7 +9,7 @@ const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
 
 /** @type {import('next').NextConfig} */
 export default {
-  output: "export",
+  // output: "export",
   reactStrictMode: false,
   images: { unoptimized: true },
   env: {
@@ -24,15 +24,15 @@ export default {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  assetPrefix: '/forked-app',
+  assetPrefix: "/forked-app",
   async rewrites() {
     return {
       beforeFiles: [
         {
-          source: '/forked-app/_next/:path+',
-          destination: '/_next/:path+',
+          source: "/forked-app/_next/:path+",
+          destination: "/_next/:path+",
         },
       ],
-    }
+    };
   },
 };

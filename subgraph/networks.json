@@ -26,5 +26,15 @@
       "address": "0x79fdb65c20e75f8961d54f6714d2fcc4c30d1073",
       "startBlock": 6959313
     }
+  },
+  "arbitrum-sepolia": {  
+    "BoldToken": {
+      "address": "0xf2883b557f81e4b5468c272ed61cc8fb198f9524",
+      "startBlock": 5712895 
+    },
+    "Governance": {
+      "address": "0x0000000000000000000000000000000000000000",
+      "startBlock": 0
+    }
   }
 }

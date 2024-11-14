@@ -359,7 +359,6 @@ export function useInterestRateChartData(collIndex: null | CollIndex) {
           size: totalDebt[0] === 0n ? 0 : dn.toNumber(dn.div(debt, highestDebt)),
         };
       });
-
       return chartData;
     },
     refetchInterval: DATA_REFRESH_INTERVAL,

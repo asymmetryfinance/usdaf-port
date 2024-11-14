@@ -30,6 +30,7 @@ export const ACCOUNT_BALANCES = {
   LQTY: dn.from(2008.217, 18),
   RETH: dn.from(1.3732, 18),
   WSTETH: dn.from(17.912, 18),
+  SPOT: dn.from(17.912, 18),
   LUSD: dn.from(1_200, 18),
 } as const;
 
@@ -107,6 +108,10 @@ export const EARN_POOLS: Record<
     boldQty: [44_100_000n, 0],
   },
   WSTETH: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  SPOT: {
     apr: dn.from(0.054, 18),
     boldQty: [25_700_000n, 0],
   },
