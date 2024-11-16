@@ -9,7 +9,7 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { INTEREST_RATE_DEFAULT } from "@/src/constants";
+import { ETH_MAX_RESERVE, INTEREST_RATE_DEFAULT } from "@/src/constants";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -18,7 +18,7 @@ import { getRedemptionRisk } from "@/src/liquity-math";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useTroveCount } from "@/src/subgraph-hooks";
+import { useTrovesCount } from "@/src/subgraph-hooks";
 import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -74,7 +74,7 @@ export function LeverageScreen() {
   ] as const)));
 
   const collBalance = balances[collToken.symbol];
-  const troveCount = useTroveCount(account.address, collIndex);
+  const troveCount = useTrovesCount(account.address ?? null, collIndex);
 
   const collPrice = usePrice(collToken.symbol);
   const depositPreLeverage = useInputFieldValue((value) => `${fmtnum(value)} ${collToken.name}`);
@@ -102,6 +102,8 @@ export function LeverageScreen() {
     depositPreLeverage.parsed,
     collPrice,
   );
+
+  const maxAmount = collBalance.data && dn.sub(collBalance.data, ETH_MAX_RESERVE);
 
   const allowSubmit = account.isConnected
     && depositPreLeverage.parsed
@@ -170,13 +172,11 @@ export function LeverageScreen() {
               placeholder="0.00"
               secondary={{
                 start: depositUsd && `$${fmtnum(depositUsd, "2z")}`,
-                end: account.isConnected && (
+                end: maxAmount && (
                   <TextButton
-                    label={`Max ${fmtnum(collBalance.data ?? 0)} ${collToken.name}`}
+                    label={`Max ${fmtnum(maxAmount)} ${collToken.name}`}
                     onClick={() => {
-                      depositPreLeverage.setValue(
-                        fmtnum(collBalance.data ?? 0).replace(",", ""),
-                      );
+                      depositPreLeverage.setValue(dn.toString(maxAmount));
                     }}
                   />
                 ),

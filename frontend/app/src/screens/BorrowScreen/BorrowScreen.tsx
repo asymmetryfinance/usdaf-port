@@ -10,6 +10,7 @@ import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import {
   DEBT_SUGGESTIONS,
+  ETH_MAX_RESERVE,
   INTEREST_RATE_DEFAULT,
   MAX_ANNUAL_INTEREST_RATE,
   MIN_ANNUAL_INTEREST_RATE,
@@ -23,7 +24,7 @@ import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useTroveCount } from "@/src/subgraph-hooks";
+import { useTrovesCount } from "@/src/subgraph-hooks";
 import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -94,7 +95,7 @@ export function BorrowScreen() {
 
   const collBalance = balances[collateral.symbol];
 
-  const troveCount = useTroveCount(account.address, collIndex);
+  const troveCount = useTrovesCount(account.address ?? null, collIndex);
 
   if (!collPrice) {
     return null;
@@ -119,6 +120,8 @@ export function BorrowScreen() {
       return { debt, ltv, risk };
     })
     : null;
+
+  const maxAmount = collBalance.data && dn.sub(collBalance.data, ETH_MAX_RESERVE);
 
   const allowSubmit = account.isConnected
     && deposit.parsed
@@ -190,13 +193,11 @@ export function BorrowScreen() {
                     ? fmtnum(dn.mul(collPrice, deposit.parsed), "2z")
                     : "0.00"
                 }`,
-                end: account.isConnected && (
+                end: maxAmount && (
                   <TextButton
-                    label={`Max ${fmtnum(collBalance.data ?? 0)} ${collateral.name}`}
+                    label={`Max ${fmtnum(maxAmount)} ${collateral.name}`}
                     onClick={() => {
-                      deposit.setValue(
-                        fmtnum(collBalance.data ?? 0).replace(",", ""),
-                      );
+                      deposit.setValue(dn.toString(maxAmount));
                     }}
                   />
                 ),
