@@ -37,7 +37,7 @@ export function AppLayout({
           paddingBottom: 48,
         })}
       >
-        <TopBar />
+        <TopBar /> {""}
       </div>
       <div
         className={css({
