@@ -241,7 +241,7 @@ export function useStabilityPoolDeposit(
     const { stabilityPoolDeposit } = await graphQuery(StabilityPoolDepositQuery, {
       id: `${collIndex}:${account}`.toLowerCase(),
     });
-    console.log({ stabilityPoolDeposit });
+
     return !stabilityPoolDeposit ? null : {
       id: `${collIndex}:${account}`.toLowerCase(),
       collateral: { collIndex },
