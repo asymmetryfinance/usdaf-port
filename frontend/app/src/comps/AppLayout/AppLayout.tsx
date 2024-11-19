@@ -38,7 +38,6 @@ export function AppLayout({
         })}
       >
         <TopBar />
-        {" "}
       </div>
       <div
         className={css({
