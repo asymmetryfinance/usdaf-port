@@ -1,6 +1,9 @@
 {
-  "framework": null,
-  "buildCommand": "",
+  "version": 2,
+  "framework": "nextjs",
+  "buildCommand": "pnpm install && pnpm build:deps && cd frontend/app && pnpm build",
+  "outputDirectory": "frontend/app/.next",
+  "installCommand": "pnpm install",
   "public": false,
   "github": {
     "enabled": false
