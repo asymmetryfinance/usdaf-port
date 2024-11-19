@@ -27,14 +27,14 @@
       "startBlock": 6959313
     }
   },
-  "arbitrum-sepolia": {  
+  "arbitrum-sepolia": {
     "BoldToken": {
       "address": "0xf2883b557f81e4b5468c272ed61cc8fb198f9524",
-      "startBlock": 5712895 
+      "startBlock": 95712895
     },
     "Governance": {
       "address": "0x0000000000000000000000000000000000000000",
-      "startBlock": 0
+      "startBlock": 95712895
     }
   }
 }

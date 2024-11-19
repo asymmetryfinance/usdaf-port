@@ -23,7 +23,7 @@ export function ProtocolStats() {
     .collaterals
     .map((collateral, collIndex) => {
       const price = prices[collateral.symbol];
-      const deposited = totalDeposited.data?.[collIndex].totalDeposited;
+      const deposited = totalDeposited.data?.[collIndex]?.totalDeposited;
       return price && deposited && dn.mul(price, deposited);
     })
     .reduce((a, b) => b ? dn.add(a ?? dn.from(0, 18), b) : a, null);

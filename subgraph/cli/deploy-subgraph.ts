@@ -69,13 +69,20 @@ export async function main() {
 
   let isLocal = false;
 
+  let graphDeployCommand: string[] = [
+    "graph",
+    "deploy",
+    "--network-file",
+    GENERATED_NETWORKS_JSON_PATH,
+  ];
+
   // network preset: local
   if (networkPreset === "local") {
-    options.name ??= "liquity2/liquity2";
-    options.graphNode ??= "http://localhost:8020/";
-    options.ipfsNode ??= "http://localhost:5001/";
-    options.network ??= "mainnet";
-    isLocal = true;
+    // options.name ??= "liquity2/liquity2";
+    // options.graphNode ??= "http://localhost:8020/";
+    // options.ipfsNode ??= "http://localhost:5001/";
+    // options.network ??= "mainnet";
+    // isLocal = true;
   }
 
   if (networkPreset === "sepolia") {
@@ -91,6 +98,27 @@ export async function main() {
   // network preset: mainnet
   if (networkPreset === "mainnet") {
     // TODO: implement
+  }
+
+  // network preset: arbitrum-sepolia
+  if (networkPreset === "arbitrum-sepolia") {
+    options.name ??= "liquity2/arbitrum-sepolia";
+    options.graphNode ??= "http://localhost:8020/";
+    options.ipfsNode ??= "http://localhost:5001/";
+    options.network ??= "arbitrum-sepolia";
+  }
+
+  if (networkPreset === "studio") {
+    options.name ??= "username/subgraph-name"; // Should match your Graph Studio name
+    options.network ??= "arbitrum-sepolia";
+    // Modify the graphDeployCommand to use studio
+    graphDeployCommand = [
+      "graph",
+      "deploy",
+      "--studio", // Add studio flag
+      "--network-file",
+      GENERATED_NETWORKS_JSON_PATH,
+    ];
   }
 
   if (!options.name) {
@@ -120,13 +148,6 @@ export async function main() {
     "create",
     ...(options.graphNode ? ["--node", options.graphNode] : []),
     options.name,
-  ];
-
-  const graphDeployCommand: string[] = [
-    "graph",
-    "deploy",
-    "--network-file",
-    GENERATED_NETWORKS_JSON_PATH,
   ];
 
   if (options.graphNode) graphDeployCommand.push("--node", options.graphNode);

@@ -55,10 +55,7 @@ const RequestSchema = v.object({
 
 export type Request = v.InferOutput<typeof RequestSchema>;
 
-type Step =
-  | "approveLst"
-  | "openTroveEth"
-  | "openTroveLst";
+type Step = "openTroveEth" | "approveLst" | "openTroveLst" | "approveErc20" | "openTroveErc20";
 
 export const openBorrowPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
@@ -104,7 +101,8 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
       request.interestRateDelegate?.[0] ?? request.annualInterestRate,
     );
     const boldAmountWithFee = upfrontFee.data && dn.add(request.boldAmount, upfrontFee.data);
-
+    // const withRefundableGas = collateral?.symbol !== "SPOT";
+    const withRefundableGas = true;
     return collateral && (
       <>
         <TransactionDetailsRow
@@ -166,18 +164,20 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
             ]}
           />
         )}
-        <TransactionDetailsRow
-          label="Refundable gas deposit"
-          value={[
-            <div
-              key="start"
-              title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}
-            >
-              {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
-            </div>,
-            "Only used in case of liquidation",
-          ]}
-        />
+        {withRefundableGas && (
+          <TransactionDetailsRow
+            label="Refundable gas deposit"
+            value={[
+              <div
+                key="start"
+                title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}
+              >
+                {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
+              </div>,
+              "Only used in case of liquidation",
+            ]}
+          />
+        )}
       </>
     );
   },
@@ -194,6 +194,33 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
       return ["openTroveEth"];
     }
 
+    if (collateral.symbol === "SPOT") {
+      const { CollToken, BorrowerOperations } = collateral.contracts;
+
+      if (!BorrowerOperations || !CollToken) {
+        throw new Error(`Collateral ${collateral.symbol} not supported`);
+      }
+
+      const allowance = dnum18(
+        await readContract(wagmiConfig, {
+          ...CollToken,
+          functionName: "allowance",
+          args: [
+            account.address ?? ADDRESS_ZERO,
+            BorrowerOperations.address,
+          ],
+        }),
+      );
+
+      const isApproved = !dn.gt(
+        dn.add(request.collAmount, ETH_GAS_COMPENSATION),
+        allowance,
+      );
+
+      return isApproved ? ["openTroveErc20"] : ["approveErc20", "openTroveErc20"];
+    }
+
+    // Original LST logic
     const { LeverageLSTZapper, CollToken } = collateral.contracts;
 
     if (!LeverageLSTZapper || !CollToken) {
@@ -216,21 +243,13 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
       allowance,
     );
 
-    const steps: Step[] = [];
-
-    if (!isApproved) {
-      steps.push("approveLst");
-    }
-
-    steps.push("openTroveLst");
-
-    return steps;
+    return isApproved ? ["openTroveLst"] : ["approveLst", "openTroveLst"];
   },
 
   getStepName(stepId, { contracts, request }) {
     const { symbol } = contracts.collaterals[request.collIndex];
     const collateral = KNOWN_COLLATERALS.find((c) => c.symbol === symbol);
-    if (stepId === "approveLst") {
+    if (stepId === "approveLst" || stepId === "approveErc20") {
       return `Approve ${collateral?.name ?? ""}`;
     }
     return `Open loan`;
@@ -260,17 +279,27 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
   async writeContractParams(stepId, { contracts, request }) {
     const collateral = contracts.collaterals[request.collIndex];
 
-    const { LeverageLSTZapper, CollToken } = collateral.contracts;
+    const { BorrowerOperations, LeverageLSTZapper, CollToken } = collateral.contracts;
     if (!LeverageLSTZapper || !CollToken) {
       throw new Error(`Collateral ${collateral.symbol} not supported`);
     }
-
     if (stepId === "approveLst") {
       return {
         ...CollToken,
         functionName: "approve" as const,
         args: [
           LeverageLSTZapper.address,
+          request.collAmount[0],
+        ],
+      };
+    }
+
+    if (stepId === "approveErc20") {
+      return {
+        ...CollToken,
+        functionName: "approve" as const,
+        args: [
+          BorrowerOperations.address,
           request.collAmount[0],
         ],
       };
@@ -327,6 +356,29 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
           receiver: ADDRESS_ZERO,
         }],
         value: ETH_GAS_COMPENSATION[0],
+      };
+    }
+
+    if (stepId === "openTroveErc20") {
+      console.log({ collateral, stepId, request });
+      return {
+        ...collateral.contracts.BorrowerOperations,
+        functionName: "openTrove" as const,
+        args: [
+          request.owner ?? ADDRESS_ZERO, // _owner
+          BigInt(request.ownerIndex), // _ownerIndex
+          request.collAmount[0], // _collAmount
+          request.boldAmount[0], // _boldAmount
+          request.upperHint[0], // _upperHint
+          request.lowerHint[0], // _lowerHint
+          request.interestRateDelegate
+            ? 0n // _annualInterestRate
+            : request.annualInterestRate[0], // _annualInterestRate
+          request.maxUpfrontFee[0], // _maxUpfrontFee
+          ADDRESS_ZERO, // _addManager
+          ADDRESS_ZERO, // _removeManager
+          ADDRESS_ZERO, // _receiver
+        ],
       };
     }
 

@@ -112,7 +112,6 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
   const spotPrice = useWatchCollateralPrice("SPOT");
   const lqtyPrice = useCoinGeckoPrice("LQTY");
   const lusdPrice = useCoinGeckoPrice("LUSD");
-
   const prevPrices = useRef<Prices>({
     BOLD: null,
     LQTY: null,
