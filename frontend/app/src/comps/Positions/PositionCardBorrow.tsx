@@ -40,7 +40,7 @@ export function PositionCardBorrow({
   const title = token
     ? [
       `Loan ID: ${shortenTroveId(troveId)}…`,
-      `Borrowed: ${fmtnum(borrowed, "full")} BOLD`,
+      `Borrowed: ${fmtnum(borrowed, "full")} USDaf`,
       `Collateral: ${fmtnum(deposit, "full")} ${token.name}`,
       `Interest rate: ${fmtnum(interestRate, "full", 100)}%`,
     ]
@@ -71,7 +71,7 @@ export function PositionCardBorrow({
             >
               <IconBorrow size={16} />
             </div>
-            BOLD loan
+            USDaf loan
           </div>
         }
         contextual={<EditSquare />}
@@ -81,7 +81,7 @@ export function PositionCardBorrow({
               {fmtnum(borrowed)}
               <TokenIcon
                 size={24}
-                symbol="BOLD"
+                symbol="USDAF"
               />
             </HFlex>
           ),

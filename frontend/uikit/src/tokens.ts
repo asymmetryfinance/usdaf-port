@@ -1,11 +1,12 @@
 import type { Token } from "./types";
 
 import tokenBold from "./token-icons/bold.svg";
-import tokenSpot from "./token-icons/bold.svg";
 import tokenEth from "./token-icons/eth.svg";
 import tokenLqty from "./token-icons/lqty.svg";
 import tokenLusd from "./token-icons/lusd.svg";
 import tokenReth from "./token-icons/reth.svg";
+import tokenSpot from "./token-icons/spot.svg";
+import tokenUsdaf from "./token-icons/usdaf.svg";
 import tokenSteth from "./token-icons/wsteth.svg";
 
 export type CollateralSymbol = "ETH" | "SPOT" | "RETH" | "WSTETH";
@@ -23,6 +24,12 @@ export const LUSD: Token = {
   icon: tokenLusd,
   name: "LUSD",
   symbol: "LUSD" as const,
+} as const;
+
+export const USDAF: Token = {
+  icon: tokenUsdaf,
+  name: "USDaf",
+  symbol: "USDAF" as const,
 } as const;
 
 export const BOLD: Token = {
@@ -80,4 +87,5 @@ export const TOKENS_BY_SYMBOL = {
   RETH,
   WSTETH,
   LUSD,
+  USDAF,
 } as const;

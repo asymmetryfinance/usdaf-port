@@ -5,7 +5,7 @@ import type { ReactNode as N } from "react";
 
 export default {
   // Used in the top bar and other places
-  appName: "Liquity V2",
+  appName: "Asymmetry Finance",
 
   // Menu bar
   menu: {
@@ -29,17 +29,17 @@ export default {
     loanRedemptionRisk: [
       "Redemption risk",
       <>
-        "Users paying the lowest interest rate can get redeemed, if the price of BOLD falls below $1. By raising your
+        "Users paying the lowest interest rate can get redeemed, if the price of USDaf falls below $1. By raising your
         interest rate, you reduce this risk.",
       </>,
     ],
     loanLtv: [
       "Loan-to-value ratio",
-      "The ratio between the amount of BOLD borrowed and the deposited collateral (in USD).",
+      "The ratio between the amount of USDaf borrowed and the deposited collateral (in USD).",
     ],
     loanMaxLtv: [
       "Maximum Loan-To-Value (LTV) Ratio",
-      "The maximum ratio between the USD value of a loan (in BOLD) and the collateral backing it. The LTV will fluctuate as the price of the collateral changes. To decrease the LTV add more colateral or reduce debt.",
+      "The maximum ratio between the USD value of a loan (in USDaf) and the collateral backing it. The LTV will fluctuate as the price of the collateral changes. To decrease the LTV add more colateral or reduce debt.",
     ],
     loanLiquidationPrice: [
       "Liquidation price",
@@ -51,7 +51,7 @@ export default {
     ],
     interestRateBoldPerYear: [
       "Interest rate",
-      "The annualized interest amount in BOLD for the selected interest rate. The accumulated interest is added to the loan.",
+      "The annualized interest amount in USDaf for the selected interest rate. The accumulated interest is added to the loan.",
     ],
     interestRateAdjustment: [
       "Interest rate adjustment",
@@ -63,11 +63,11 @@ export default {
   redemptionInfo: {
     title: "Redemptions in a nutshell",
     subtitle:
-      "Redemptions help maintain BOLD's peg in a decentralized way. If a user is redeemed, their collateral and debt are reduced equally, resulting in no net loss.",
+      "Redemptions help maintain USDaf's peg in a decentralized way. If a user is redeemed, their collateral and debt are reduced equally, resulting in no net loss.",
     infoItems: [
       {
-        icon: "bold",
-        text: "Redemptions occur when BOLD drops below $1.",
+        icon: "usdaf",
+        text: "Redemptions occur when USDaf drops below $1.",
       },
       {
         icon: "redemption",
@@ -141,16 +141,16 @@ export default {
     myPositionsTitle: "My positions",
     actions: {
       borrow: {
-        title: "Borrow BOLD",
-        description: "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
+        title: "Borrow USDaf",
+        description: "Set your own interest rate and borrow USDaf against ETH and staked ETH.",
       },
       leverage: {
         title: "Leverage ETH",
         description: "Set your own interest rate and increase your exposure to ETH and staked ETH.",
       },
       earn: {
-        title: "Earn with BOLD",
-        description: "Cover liquidations to earn BOLD and collateral assets.",
+        title: "Earn with USDaf",
+        description: "Cover liquidations to earn USDaf and collateral assets.",
       },
       stake: {
         title: "Stake LQTY",
@@ -170,7 +170,7 @@ export default {
       ],
       spTvl: [
         "Total Value Locked",
-        "The total amount of BOLD deposited in each stability pool.",
+        "The total amount of USDaf deposited in each stability pool.",
       ],
       borrowTvl: [
         "Total Value Locked",
@@ -183,7 +183,7 @@ export default {
   borrowScreen: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Borrow {boldIcon} BOLD with {tokensIcons} ETH
+        Borrow {boldIcon} USDaf with {tokensIcons} SPOT
       </>
     ),
     depositField: {
@@ -201,7 +201,7 @@ export default {
     action: "Next: Summary",
     infoTooltips: {
       interestRateSuggestions: [
-        "Positions with lower interest rates are the first to be redeemed by BOLD holders.",
+        "Positions with lower interest rates are the first to be redeemed by USDaf holders.",
       ],
     },
   },
@@ -229,7 +229,7 @@ export default {
         "Choose the amplification of your exposure. Note that a higher level means higher liquidation risk. You are responsible for your own assessment of what a suitable level is.",
       ],
       interestRateSuggestions: [
-        "Positions with lower interest rates are the first to be redeemed by BOLD holders.",
+        "Positions with lower interest rates are the first to be redeemed by USDaf holders.",
       ],
       exposure: [
         "Exposure",
@@ -242,13 +242,13 @@ export default {
   earnHome: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Deposit {boldIcon} BOLD to earn rewards {tokensIcons}
+        Deposit {boldIcon} USDaf to earn rewards {tokensIcons}
       </>
     ),
     subheading: (
       <>
-        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, in case the
-        system needs to liquidate positions, the BOLD may be swapped to collateral.
+        A USDaf deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, in case the
+        system needs to liquidate positions, the USDaf may be swapped to collateral.
       </>
     ),
     poolsColumns: {
@@ -258,7 +258,7 @@ export default {
     },
     infoTooltips: {
       tvl: (collateral: N) => [
-        <>Total BOLD covering {collateral}-backed position liquidations</>,
+        <>Total USDaf covering {collateral}-backed position liquidations</>,
       ],
     },
   },
@@ -306,10 +306,10 @@ export default {
     },
     infoTooltips: {
       tvl: (collateral: N) => [
-        <>Total BOLD covering {collateral}-backed position liquidations.</>,
+        <>Total USDaf covering {collateral}-backed position liquidations.</>,
       ],
       depositPoolShare: [
-        "Percentage of your BOLD deposit compared to the total deposited in this stability pool.",
+        "Percentage of your USDaf deposit compared to the total deposited in this stability pool.",
       ],
       alsoClaimRewardsDeposit: [
         <>
@@ -323,14 +323,14 @@ export default {
         </>,
       ],
       currentApr: [
-        "Average annualized return for BOLD deposits over the past 7 days.",
+        "Average annualized return for USDaf deposits over the past 7 days.",
       ],
       rewardsEth: [
         "ETH rewards",
         "Your proceeds from liquidations conducted by this stability pool.",
       ],
       rewardsBold: [
-        "BOLD rewards",
+        "USDaf rewards",
         "Your earnings from protocol revenue distributions to this stability pool.",
       ],
     },
@@ -385,8 +385,8 @@ export default {
       title: "Allocate your voting power",
       intro: (
         <>
-          Direct incentives from Liquity V2 protocol revenues towards liquidity providers for BOLD. Upvote from Thursday
-          to Tuesday. Downvote all week. <Link href="https://github.com/liquity/V2-gov">Learn more</Link>
+          Direct incentives from Liquity V2 protocol revenues towards liquidity providers for USDaf. Upvote from
+          Thursday to Tuesday. Downvote all week. <Link href="https://github.com/liquity/V2-gov">Learn more</Link>
         </>
       ),
     },

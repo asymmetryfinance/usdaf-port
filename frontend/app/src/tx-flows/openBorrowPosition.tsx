@@ -124,14 +124,14 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
               key="start"
               fallback="…"
               value={boldAmountWithFee}
-              suffix=" BOLD"
+              suffix=" USDaf"
             />,
             <Amount
               key="end"
               fallback="…"
               prefix="Incl. "
               value={upfrontFee.data}
-              suffix=" BOLD upfront fee"
+              suffix=" USDaf upfront fee"
             />,
           ]}
         />
@@ -147,7 +147,7 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
               key="end"
               fallback="…"
               value={boldAmountWithFee && dn.mul(boldAmountWithFee, request.annualInterestRate)}
-              suffix=" BOLD per year"
+              suffix=" USDaf per year"
             />,
           ]}
         />

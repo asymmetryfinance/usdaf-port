@@ -111,7 +111,8 @@ export const EnvSchema = v.pipe(
       contracts: Record<ContractEnvName, Address>;
     }> = [];
 
-    for (const index of Array(10).keys()) {
+    // ADAPT THIS ARRAY WHEN ADDING MORE COLLATERALS
+    for (const index of Array(2).keys()) {
       const collEnvName = `COLL_${index}`;
       const contracts: Partial<Record<ContractEnvName, Address>> = {};
 

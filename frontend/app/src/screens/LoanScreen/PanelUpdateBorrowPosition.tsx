@@ -253,7 +253,7 @@ export function PanelUpdateBorrowPosition({
               contextual={
                 <InputTokenBadge
                   background={false}
-                  icon={<TokenIcon symbol="BOLD" />}
+                  icon={<TokenIcon symbol="USDAF" />}
                   label="BOLD"
                 />
               }

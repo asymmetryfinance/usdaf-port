@@ -12,7 +12,7 @@ import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
 
-const DISPLAYED_PRICES = ["LQTY", "BOLD", "ETH"] as const;
+const DISPLAYED_PRICES = ["USDAF", "SPOT", "ETH"] as const;
 
 export function ProtocolStats() {
   const account = useAccount();

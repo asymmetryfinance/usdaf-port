@@ -329,11 +329,11 @@ export function PanelUpdateLeveragePosition({
                 <ValueUpdate
                   fontSize={14}
                   before={initialLoanDetails.debt && (
-                    `${fmtnum(initialLoanDetails.debt)} BOLD`
+                    `${fmtnum(initialLoanDetails.debt)} USDaf`
                   )}
                   after={newLoanDetails.debt && dn.gt(newLoanDetails.debt, 0)
                     ? (
-                      `${fmtnum(newLoanDetails.debt)} BOLD`
+                      `${fmtnum(newLoanDetails.debt)} USDaf`
                     )
                     : (
                       `N/A`

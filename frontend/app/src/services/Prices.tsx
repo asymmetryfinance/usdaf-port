@@ -25,7 +25,7 @@ import { useRef } from "react";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "LQTY" | "BOLD" | "LUSD" | CollateralSymbol;
+type PriceToken = "LQTY" | "USDAF" | "BOLD" | "LUSD" | CollateralSymbol;
 
 type Prices = Record<PriceToken, Dnum | null>;
 
@@ -33,6 +33,7 @@ const initialPrices: Prices = {
   BOLD: dn.from(1, 18),
   LQTY: null,
   LUSD: dn.from(1, 18),
+  USDAF: dn.from(1, 18),
 
   // collaterals
   ETH: null,
@@ -58,6 +59,7 @@ function useWatchCollateralPrice(collateral: CollateralSymbol) {
 const coinGeckoTokenIds = {
   LQTY: "liquity",
   LUSD: "liquity-usd",
+  USDAF: "usd-coin",
 } as const;
 
 function useCoinGeckoPrice(supportedSymbol: keyof typeof coinGeckoTokenIds) {
@@ -112,8 +114,11 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
   const spotPrice = useWatchCollateralPrice("SPOT");
   const lqtyPrice = useCoinGeckoPrice("LQTY");
   const lusdPrice = useCoinGeckoPrice("LUSD");
+  const usedafPrice = useCoinGeckoPrice("USDAF");
+
   const prevPrices = useRef<Prices>({
     BOLD: null,
+    USDAF: null,
     LQTY: null,
     LUSD: null,
     ETH: null,
@@ -127,6 +132,7 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
       BOLD: dn.from(1, 18), // TODO
       LQTY: lqtyPrice.data ? dn.from(lqtyPrice.data, 18) : null,
       LUSD: lusdPrice.data ? dn.from(lusdPrice.data, 18) : null,
+      USDAF: usedafPrice.data ? dn.from(usedafPrice.data, 18) : null,
 
       ETH: ethPrice.data ? dnum18(ethPrice.data) : null,
       RETH: rethPrice.data ? dnum18(rethPrice.data) : null,
@@ -158,6 +164,7 @@ if (DEMO_MODE) {
         const variation = () => dn.from((Math.random() - 0.5) * DEMO_PRICE_UPDATE_VARIATION, 18);
         callback({
           BOLD: dn.add(DEMO_BOLD_PRICE, dn.mul(DEMO_BOLD_PRICE, variation())),
+          USDAF: dn.add(DEMO_BOLD_PRICE, dn.mul(DEMO_BOLD_PRICE, variation())),
           LQTY: dn.add(DEMO_LQTY_PRICE, dn.mul(DEMO_LQTY_PRICE, variation())),
           LUSD: dn.add(DEMO_LUSD_PRICE, dn.mul(DEMO_LUSD_PRICE, variation())),
           ETH: dn.add(DEMO_ETH_PRICE, dn.mul(DEMO_ETH_PRICE, variation())),

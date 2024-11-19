@@ -43,7 +43,7 @@ export type DelegateMode = "manual" | "strategy" | "delegate";
 
 const DELEGATE_MODES: DelegateMode[] = [
   "manual",
-  "delegate",
+  // "delegate",
   "strategy",
 ];
 
@@ -215,7 +215,7 @@ export const InterestRateField = memo(
                 <div>
                   {boldInterestPerYear && (mode === "manual" || delegate !== null)
                     ? fmtnum(boldInterestPerYear, 2)
-                    : "−"} BOLD / year
+                    : "−"} USDaf / year
                 </div>
                 <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
               </HFlex>
@@ -232,7 +232,7 @@ export const InterestRateField = memo(
                     ? fmtnum(boldRedeemableInFront, "compact")
                     : "−"}
                 </span>
-                <span>{" BOLD"}</span>
+                <span>{" USDaf"}</span>
               </span>
             ),
           }}

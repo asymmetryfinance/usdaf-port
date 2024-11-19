@@ -85,7 +85,7 @@ export function LeverageField({
                 >
                   {dn.format(debt, { digits: 2, trailingZeros: true })}
                 </span>
-                {" BOLD"}
+                {" USDaf"}
               </>
             )}
           </div>

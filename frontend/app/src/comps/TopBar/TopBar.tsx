@@ -5,7 +5,7 @@ import type { ComponentProps } from "react";
 import { Logo } from "@/src/comps/Logo/Logo";
 import content from "@/src/content";
 import { css } from "@/styled-system/css";
-import { IconBorrow, IconDashboard, IconEarn, IconLeverage, IconStake } from "@liquity2/uikit";
+import { IconBorrow, IconDashboard, IconEarn } from "@liquity2/uikit";
 import Link from "next/link";
 import { AccountButton } from "./AccountButton";
 import { Menu } from "./Menu";

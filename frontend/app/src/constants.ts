@@ -37,6 +37,7 @@ export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = {
   ETH: dn.from(100_000_000n, 18),
   WSTETH: dn.from(100_000_000n, 18),
   RETH: dn.from(100_000_000n, 18),
+  SPOT: dn.from(100_000_000n, 18),
 };
 
 // LTV factor suggestions, as ratios of the leverage factor range

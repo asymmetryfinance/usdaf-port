@@ -139,7 +139,7 @@ export default function InputFieldFixture() {
               >
                 {boldInterestPerYear}
               </span>{"   "}
-              BOLD / year
+              USDaf / year
             </span>
           ),
           end: (

@@ -154,7 +154,7 @@ export function useWagmiConfig() {
       contractMulticall: { address: CHAIN_CONTRACT_MULTICALL },
     });
     return getDefaultConfig({
-      appName: "Liquity V2",
+      appName: "Asymmetry Finance",
       projectId: WALLET_CONNECT_PROJECT_ID,
       chains: [chain],
       transports: {

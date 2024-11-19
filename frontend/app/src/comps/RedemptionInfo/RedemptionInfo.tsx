@@ -8,6 +8,7 @@ const { title, subtitle, infoItems, learnMore } = content.redemptionInfo;
 
 const iconComponents = {
   bold: BoldIcon,
+  usdaf: BoldIcon,
   redemption: RedemptionIcon,
   interest: InterestIcon,
 } as const;

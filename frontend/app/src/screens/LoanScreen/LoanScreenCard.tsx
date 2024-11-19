@@ -655,7 +655,7 @@ function LoanCard({
                         })}
                       >
                         {fmtnum(loan.borrowed)}
-                        <TokenIcon symbol="BOLD" size={32} />
+                        <TokenIcon symbol="USDAF" size={32} />
                       </div>
                     )}
                 </div>
