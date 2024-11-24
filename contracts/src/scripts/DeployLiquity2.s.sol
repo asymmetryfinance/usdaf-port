@@ -30,6 +30,7 @@ import "../Zappers/WETHZapper.sol";
 import "../Zappers/GasCompZapper.sol";
 import "../Zappers/LeverageLSTZapper.sol";
 import "../Zappers/LeverageWETHZapper.sol";
+import "../Zappers/Modules/Exchanges/HybridCurveUniV3ExchangeHelpers.sol";
 import {BalancerFlashLoan} from "../Zappers/Modules/FlashLoans/BalancerFlashLoan.sol";
 import "../Zappers/Modules/Exchanges/Curve/ICurveStableswapNGFactory.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
@@ -40,12 +41,12 @@ import "../Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol";
 import "../Zappers/Modules/Exchanges/HybridCurveUniV3Exchange.sol";
 import {WETHTester} from "../test/TestContracts/WETHTester.sol";
-import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "forge-std/console2.sol";
 import {IRateProvider, IWeightedPool, IWeightedPoolFactory} from "./Interfaces/Balancer/IWeightedPool.sol";
 import {IVault} from "./Interfaces/Balancer/IVault.sol";
+import {MockStakingV1} from "V2-gov/test/mocks/MockStakingV1.sol";
 
-import {DeployGovernance} from "./DeployGovernance.s.sol";
+import {DeployGovernance, ICurveStableswapNG} from "./DeployGovernance.s.sol";
 
 contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats, MetadataDeployment {
     using Strings for *;
@@ -147,8 +148,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ICollateralRegistry collateralRegistry;
         IBoldToken boldToken;
         ERC20Faucet usdc;
+        ICurveStableswapNGPool usdcCurvePool;
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
+        IExchangeHelpers exchangeHelpers;
     }
 
     function run() external {
@@ -167,6 +170,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         console2.log(deployer, "deployer");
         console2.log(deployer.balance, "deployer balance");
+
+        // Needed for Governance (they will be constants for mainnet)
+        lqty = new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days);
+        stakingV1 = address(new MockStakingV1(address(lqty)));
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](3);
         troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WETH
@@ -230,11 +237,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // );
         }
 
-        deployGovernance(deployer, SALT, deployed.boldToken, deployed.usdc);
+        // Governance
+        (address governanceAddress, string memory governanceManifest) = deployGovernance(
+            deployer, SALT, deployed.boldToken, deployed.usdc, ICurveStableswapNG(address(deployed.usdcCurvePool))
+        );
+        address computedGovernanceAddress = computeGovernanceAddress(deployer, SALT, deployed.boldToken, new address[](0));
+        //console2.log(computedGovernanceAddress, "computedGovernanceAddress");
+        //console2.log(governanceAddress, "governanceAddress");
+        assert(governanceAddress == computedGovernanceAddress);
 
         vm.stopBroadcast();
 
-        vm.writeFile("deployment-manifest.json", _getManifestJson(deployed));
+        vm.writeFile("deployment-manifest.json", _getManifestJson(deployed, governanceManifest));
 
         if (vm.envOr("OPEN_DEMO_TROVES", false)) {
             // Anvil default accounts
@@ -365,7 +379,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         // USDC and USDC-BOLD pool
         r.usdc = new ERC20Faucet("USDC", "USDC", 0, type(uint256).max);
-        ICurveStableswapNGPool usdcCurvePool = _deployCurveBoldUsdcPool(r.boldToken, r.usdc);
+        r.usdcCurvePool = _deployCurveBoldUsdcPool(r.boldToken, r.usdc);
 
         r.contractsArray = new LiquityContractsTestnet[](vars.numCollaterals);
         vars.collaterals = new ERC20Faucet[](vars.numCollaterals);
@@ -405,7 +419,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 r.collateralRegistry,
                 _WETH,
                 r.usdc,
-                usdcCurvePool,
+                r.usdcCurvePool,
                 vars.addressesRegistries[vars.i],
                 address(vars.troveManagers[vars.i]),
                 r.hintHelpers,
@@ -415,6 +429,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
 
         r.boldToken.setCollateralRegistry(address(r.collateralRegistry));
+
+        // exchange helpers
+        r.exchangeHelpers = new HybridCurveUniV3ExchangeHelpers(
+            r.usdc,
+            _WETH,
+            r.usdcCurvePool,
+            USDC_INDEX, // USDC Curve pool index
+            BOLD_TOKEN_INDEX, // BOLD Curve pool index
+            UNIV3_FEE_USDC_WETH,
+            UNIV3_FEE_WETH_COLL,
+            uniV3QuoterSepolia
+        );
     }
 
     function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)
@@ -462,7 +488,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
         contracts.priceFeed = new PriceFeedTestnet();
-        contracts.interestRouter = IInterestRouter(computeGovernanceAddress(deployer, SALT));
+        //console2.log(computeGovernanceAddress(deployer, SALT, _boldToken, new address[](0)), "computeGovernanceAddress");
+        contracts.interestRouter = IInterestRouter(computeGovernanceAddress(deployer, SALT, _boldToken, new address[](0)));
         addresses.borrowerOperations = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry)))
         );
@@ -604,7 +631,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             "USDC-BOLD",
             "USDCBOLD",
             coins,
-            4000, // A
+            200, // A
             1000000, // fee
             20000000000, // _offpeg_fee_multiplier
             865, // _ma_exp_time
@@ -877,7 +904,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
     }
 
-    function _getManifestJson(DeploymentResult memory deployed) internal pure returns (string memory) {
+    function _getManifestJson(DeploymentResult memory deployed, string memory _governanceManifest)
+        internal
+        pure
+        returns (string memory)
+    {
         string[] memory branches = new string[](deployed.contractsArray.length);
 
         // Poor man's .map()
@@ -893,7 +924,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 string.concat('"boldToken":"', address(deployed.boldToken).toHexString(), '",'),
                 string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",'),
                 string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
-                string.concat('"branches":[', branches.join(","), "]") // no comma
+                string.concat('"exchangeHelpers":"', address(deployed.exchangeHelpers).toHexString(), '",'),
+                string.concat('"branches":[', branches.join(","), "],"),
+                string.concat('"governance":', _governanceManifest, '') // no comma
             ),
             "}"
         );
