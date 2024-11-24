@@ -47,16 +47,60 @@ export const TrovesCountQuery = graphql(`
   }
 `);
 
+export const FullTroveQueryFragment = graphql(`
+  fragment FullTroveFragment on Trove {
+    id
+    borrower
+    closedAt
+    createdAt
+    debt
+    deposit
+    interestRate
+    mightBeLeveraged
+    stake
+    status
+    troveId
+    updatedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+      collIndex
+    }
+    interestBatch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
+    }
+  }
+`);
+
 export const TrovesByAccountQuery = graphql(`
   query TrovesByAccount($account: Bytes!) {
     troves(
-      where: { borrower: $account, closedAt: null }
+      where: {
+        borrower: $account,
+        status_in: [active,redeemed,liquidated],
+      }
       orderBy: updatedAt
       orderDirection: desc
     ) {
       id
       borrower
       closedAt
+      createdAt
+      debt
+      deposit
+      interestRate
+      mightBeLeveraged
+      stake
+      status
+      troveId
+      updatedAt
       collateral {
         id
         token {
@@ -66,20 +110,12 @@ export const TrovesByAccountQuery = graphql(`
         minCollRatio
         collIndex
       }
-      createdAt
-      updatedAt
-      debt
-      deposit
       interestBatch {
         id
         annualInterestRate
         annualManagementFee
         batchManager
       }
-      interestRate
-      stake
-      troveId
-      usedLeverageZapper
     }
   }
 `);
@@ -90,6 +126,15 @@ export const TroveByIdQuery = graphql(`
       id
       borrower
       closedAt
+      createdAt
+      debt
+      deposit
+      interestRate
+      mightBeLeveraged
+      stake
+      status
+      troveId
+      updatedAt
       collateral {
         id
         token {
@@ -99,20 +144,12 @@ export const TroveByIdQuery = graphql(`
         minCollRatio
         collIndex
       }
-      createdAt
-      updatedAt
-      debt
-      deposit
       interestBatch {
         id
         annualInterestRate
         annualManagementFee
         batchManager
       }
-      interestRate
-      stake
-      troveId
-      usedLeverageZapper
     }
   }
 `);
@@ -126,15 +163,33 @@ export const StabilityPoolQuery = graphql(`
   }
 `);
 
+export const StabilityPoolDepositQueryFragment = graphql(`
+  fragment StabilityPoolDepositFragment on StabilityPoolDeposit {
+    id
+    deposit
+    depositor
+    collateral {
+      collIndex
+    }
+    snapshot {
+      B
+      P
+      S
+      epoch
+      scale
+    }
+  }
+`);
+
 export const StabilityPoolDepositsByAccountQuery = graphql(`
   query StabilityPoolDepositsByAccount($account: Bytes!) {
     stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {
       id
+      deposit
+      depositor
       collateral {
         collIndex
       }
-      deposit
-      depositor
       snapshot {
         B
         P
@@ -150,11 +205,11 @@ export const StabilityPoolDepositQuery = graphql(`
   query StabilityPoolDeposit($id: ID!) {
     stabilityPoolDeposit(id: $id) {
       id
+      deposit
+      depositor
       collateral {
         collIndex
       }
-      deposit
-      depositor
       snapshot {
         B
         P

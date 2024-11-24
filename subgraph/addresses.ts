@@ -19,5 +19,4 @@ export let governanceDeploymentInitiatives = [
 // ];
 
 // Mainnet
-// export let leverageZappers = [];
 // export let governanceDeploymentInitiatives = [];
