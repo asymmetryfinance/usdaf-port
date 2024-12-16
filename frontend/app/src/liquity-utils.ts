@@ -1,4 +1,4 @@
-import type { GraphStabilityPoolDeposit } from "@/src/subgraph-hooks";
+import type { StabilityPoolDepositQuery } from "@/src/graphql/graphql";
 import type { CollIndex, Dnum, PositionEarn, PositionStake, PrefixedTroveId, TroveId } from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
 
@@ -23,45 +23,14 @@ import { COLLATERALS, isAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
-import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useReadContract, useReadContracts } from "wagmi";
-
-// As defined in ITroveManager.sol
-export type TroveStatus =
-  | "nonExistent"
-  | "active"
-  | "closedByOwner"
-  | "closedByLiquidation"
-  | "unredeemable";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
     ? troveId
     // : troveId.slice(0, chars + 2) + "…" + troveId.slice(-chars);
     : troveId.slice(0, chars + 2) + "…";
-}
-
-export function troveStatusFromNumber(value: number): TroveStatus {
-  return match<number, TroveStatus>(value)
-    .with(0, () => "nonExistent")
-    .with(1, () => "active")
-    .with(2, () => "closedByOwner")
-    .with(3, () => "closedByLiquidation")
-    .with(4, () => "unredeemable")
-    .otherwise(() => {
-      throw new Error(`Unknown trove status number: ${value}`);
-    });
-}
-
-export function troveStatusToLabel(status: TroveStatus) {
-  return match(status)
-    .with("nonExistent", () => "Non-existent")
-    .with("active", () => "Active")
-    .with("closedByOwner", () => "Closed by owner")
-    .with("closedByLiquidation", () => "Closed by liquidation")
-    .with("unredeemable", () => "Unredeemable")
-    .exhaustive();
 }
 
 export function getTroveId(owner: Address, ownerIndex: bigint | number) {
@@ -103,11 +72,9 @@ export function getCollToken(collIndex: CollIndex | null): CollateralToken | nul
   return collToken;
 }
 
-export function useCollIndexFromSymbol(symbol: CollateralSymbol | null): CollIndex | null {
+export function getCollIndexFromSymbol(symbol: CollateralSymbol | null): CollIndex | null {
+  if (symbol === null) return null;
   const { collaterals } = getContracts();
-  if (symbol === null) {
-    return null;
-  }
   const collIndex = collaterals.findIndex((coll) => coll.symbol === symbol);
   return isCollIndex(collIndex) ? collIndex : null;
 }
@@ -192,7 +159,7 @@ export function useEarnPosition(
 }
 
 function earnPositionFromGraph(
-  spDeposit: GraphStabilityPoolDeposit,
+  spDeposit: NonNullable<StabilityPoolDepositQuery["stabilityPoolDeposit"]>,
   rewards: { bold: Dnum; coll: Dnum },
 ): PositionEarn {
   const collIndex = spDeposit.collateral.collIndex;

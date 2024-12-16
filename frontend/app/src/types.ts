@@ -39,7 +39,10 @@ export type MenuSection = {
   label: ReactNode;
 };
 
-export type PositionLoan = {
+export type PositionLoanBase = {
+  // TODO: rename the type to "loan" and move "borrow" | "leverage" to
+  // a "mode" field. The two separate types come from a previous design
+  // where the two types of positions were having separate types.
   type: "borrow" | "leverage";
   batchManager: null | Address;
   borrowed: Dnum;
@@ -47,11 +50,37 @@ export type PositionLoan = {
   collIndex: CollIndex;
   deposit: Dnum;
   interestRate: Dnum;
-  troveId: TroveId;
+  status:
+    | "active"
+    | "closed"
+    | "liquidated"
+    | "redeemed";
 };
+
+export type PositionLoanCommitted = PositionLoanBase & {
+  troveId: TroveId;
+  updatedAt: number;
+  createdAt: number;
+};
+
+export type PositionLoanUncommitted = PositionLoanBase & {
+  troveId: null;
+};
+
+export type PositionLoan = PositionLoanCommitted | PositionLoanUncommitted;
 
 export function isPositionLoan(position: Position): position is PositionLoan {
   return position.type === "borrow" || position.type === "leverage";
+}
+export function isPositionLoanCommitted(
+  position: Position,
+): position is PositionLoanCommitted {
+  return isPositionLoan(position) && position.troveId !== null;
+}
+export function isPositionLoanUncommitted(
+  position: Position,
+): position is PositionLoanUncommitted {
+  return isPositionLoan(position) && position.troveId === null;
 }
 
 export type PositionEarn = {

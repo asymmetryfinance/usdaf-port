@@ -1,4 +1,4 @@
-import type { Address, Position } from "@/src/types";
+import type { Address, Position, PositionLoanUncommitted } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
@@ -7,15 +7,13 @@ import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
 import { useStakePosition } from "@/src/liquity-utils";
 import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hooks";
-import { sleep } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { StrongCard } from "@liquity2/uikit";
 import { a, useSpring, useTransition } from "@react-spring/web";
-import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { match, P } from "ts-pattern";
 import { NewPositionCard } from "./NewPositionCard";
+import { PositionCard } from "./PositionCard";
 import { PositionCardEarn } from "./PositionCardEarn";
 import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardStake } from "./PositionCardStake";
@@ -27,9 +25,11 @@ export function Positions({
   columns,
   showNewPositionCard = true,
   title = (mode) => (
-    mode === "actions"
-      ? content.home.openPositionTitle
-      : content.home.myPositionsTitle
+    mode === "loading"
+      ? " "
+      : mode === "positions"
+      ? content.home.myPositionsTitle
+      : content.home.openPositionTitle
   ),
 }: {
   address: null | Address;
@@ -41,44 +41,47 @@ export function Positions({
   const earnPositions = useEarnPositionsByAccount(address);
   const stakePosition = useStakePosition(address);
 
-  const positions = useQuery({
-    enabled: Boolean(
-      address
-        && !loans.isPending
-        && !earnPositions.isPending
-        && !stakePosition.isPending,
-    ),
-    queryKey: ["CombinedPositions", address],
-    queryFn: async () => {
-      await sleep(300);
-      if (DEMO_MODE) {
-        return ACCOUNT_POSITIONS;
-      }
-      return [
-        ...loans.data ?? [],
-        ...earnPositions.data ?? [],
-        ...stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : [],
-      ];
-    },
-  });
-
-  const positionsPending = Boolean(
+  const isPositionsPending = Boolean(
     address && (
-      loans.isPending || earnPositions.isPending || positions.isPending
+      loans.isPending
+      || earnPositions.isPending
+      || stakePosition.isPending
     ),
   );
 
-  let mode: Mode = address && positions.data && positions.data.length > 0
+  const positions = isPositionsPending ? [] : (
+    DEMO_MODE ? ACCOUNT_POSITIONS : [
+      ...loans.data ?? [],
+      ...earnPositions.data ?? [],
+      ...stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : [],
+    ]
+  );
+
+  let mode: Mode = address && positions && positions.length > 0
     ? "positions"
-    : positionsPending
+    : isPositionsPending
     ? "loading"
     : "actions";
+
+  // preloading for 1 second, prevents flickering
+  // since the account doesn’t reconnect instantly
+  const [preLoading, setPreLoading] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPreLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (preLoading) {
+    mode = "loading";
+  }
 
   return (
     <PositionsGroup
       columns={columns}
       mode={mode}
-      positions={positions.data ?? []}
+      positions={positions ?? []}
       showNewPositionCard={showNewPositionCard}
       title={title}
     />
@@ -96,7 +99,7 @@ function PositionsGroup({
   columns?: number;
   mode: Mode;
   onTitleClick?: () => void;
-  positions: Position[];
+  positions: Exclude<Position, PositionLoanUncommitted>[];
   title: (mode: Mode) => ReactNode;
   showNewPositionCard: boolean;
 }) {
@@ -134,9 +137,9 @@ function PositionsGroup({
       return cards;
     })
     .with("loading", () => [
-      [0, <StrongCard key="0" loading />],
-      [1, <StrongCard key="1" loading />],
-      [2, <StrongCard key="2" loading />],
+      [0, <PositionCard key="0" loading />],
+      [1, <PositionCard key="1" loading />],
+      [2, <PositionCard key="2" loading />],
     ])
     .with("actions", () =>
       showNewPositionCard
@@ -153,28 +156,32 @@ function PositionsGroup({
     columns = 4;
   }
 
-  const cardHeight = mode === "actions" ? 144 : 188;
+  const cardHeight = mode === "actions" ? 144 : 180;
   const rows = Math.ceil(cards.length / columns);
   const containerHeight = cardHeight * rows + 24 * (rows - 1);
 
   const positionTransitions = useTransition(cards, {
     keys: ([index]) => `${mode}${index}`,
     from: {
+      display: "none",
       opacity: 0,
-      transform: "scale3d(0.97, 0.97, 1)",
+      transform: "scale(0.9)",
     },
     enter: {
+      display: "grid",
       opacity: 1,
-      transform: "scale3d(1, 1, 1)",
+      transform: "scale(1)",
     },
     leave: {
       display: "none",
+      opacity: 0,
+      transform: "scale(1)",
       immediate: true,
     },
     config: {
-      mass: 2,
-      tension: 1800,
-      friction: 80,
+      mass: 1,
+      tension: 1600,
+      friction: 120,
     },
   });
 
@@ -205,7 +212,7 @@ function PositionsGroup({
             userSelect: "none",
           })}
           style={{
-            paddingBottom: mode === "actions" ? 48 : 32,
+            paddingBottom: 32,
           }}
           onClick={onTitleClick}
         >

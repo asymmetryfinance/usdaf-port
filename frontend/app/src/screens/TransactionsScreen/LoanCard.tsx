@@ -27,15 +27,15 @@ export function LoanCard({
   leverageMode,
   loadingState,
   loan,
-  prevLoan,
   onRetry,
+  prevLoan,
   txPreviewMode = false,
 }: {
   leverageMode: boolean;
   loadingState: LoadingState;
   loan: PositionLoan | null;
-  prevLoan?: PositionLoan | null;
   onRetry: () => void;
+  prevLoan?: PositionLoan | null;
   txPreviewMode?: boolean;
 }) {
   const collToken = getCollToken(loan?.collIndex ?? prevLoan?.collIndex ?? null);
@@ -258,17 +258,9 @@ export function LoanCard({
                       gap: 8,
                     })}
                   >
-                    {fmtnum(dn.mul(loan.interestRate, 100))}%
-                    {prevLoan && !dn.eq(prevLoan.interestRate, loan.interestRate) && (
-                      <div
-                        className={css({
-                          color: "contentAlt",
-                          textDecoration: "line-through",
-                        })}
-                      >
-                        {fmtnum(dn.mul(prevLoan.interestRate, 100))}%
-                      </div>
-                    )}
+                    <div>
+                      {fmtnum(dn.mul(loan.interestRate, 100))}%
+                    </div>
                     {loan.batchManager && (
                       <div
                         title={`Interest rate delegate: ${loan.batchManager}`}
@@ -286,6 +278,16 @@ export function LoanCard({
                         })}
                       >
                         delegated
+                      </div>
+                    )}
+                    {prevLoan && !dn.eq(prevLoan.interestRate, loan.interestRate) && (
+                      <div
+                        className={css({
+                          color: "contentAlt",
+                          textDecoration: "line-through",
+                        })}
+                      >
+                        {fmtnum(dn.mul(prevLoan.interestRate, 100))}%
                       </div>
                     )}
                   </div>
@@ -573,7 +575,7 @@ function LoadingCard({
         cardtransform: "scale3d(1, 1, 1)",
         containerHeight: height,
         cardHeight: height,
-        cardBackground: token("colors.blue:950"),
+        cardBackground: token("colors.position"),
         cardColor: token("colors.white"),
       })),
     config: {
@@ -589,6 +591,7 @@ function LoadingCard({
         display: "flex",
         justifyContent: "center",
         flexDirection: "column",
+        width: "100%",
       })}
       style={{
         height: spring.containerHeight,
@@ -641,7 +644,16 @@ function LoadingCard({
               })}
             >
               {leverage
-                ? <IconLeverage size={16} />
+                ? (
+                  <div
+                    className={css({
+                      display: "flex",
+                      color: "brandGreen",
+                    })}
+                  >
+                    <IconLeverage size={16} />
+                  </div>
+                )
                 : <IconBorrow size={16} />}
             </div>
             {title}

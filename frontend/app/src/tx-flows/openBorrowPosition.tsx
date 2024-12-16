@@ -4,10 +4,12 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
+import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
+import { isTroveId } from "@/src/types";
 import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
 import { ADDRESS_ZERO, COLLATERALS as KNOWN_COLLATERALS, shortenAddress } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -77,7 +79,8 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
         loadingState="success"
         loan={{
           type: "borrow",
-          troveId: "0x",
+          status: "active",
+          troveId: null,
           borrower: request.owner,
           batchManager: request.interestRateDelegate?.[0] ?? null,
           borrowed: boldAmountWithFee ?? dnum18(0),
@@ -131,7 +134,7 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
               fallback="…"
               prefix="Incl. "
               value={upfrontFee.data}
-              suffix=" BOLD upfront fee"
+              suffix=" BOLD interest rate adjustment fee"
             />,
           ]}
         />
@@ -240,7 +243,8 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
 
   parseReceipt(stepId, receipt, { request, contracts }): string | null {
     const collateral = contracts.collaterals[request.collIndex];
-    if (stepId === "openTroveEth") {
+
+    if (stepId === "openTroveEth" || stepId === "openTroveLst") {
       const [troveOperation] = parseEventLogs({
         abi: collateral.contracts.TroveManager.abi,
         logs: receipt.logs,
@@ -250,6 +254,7 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
         return "0x" + (troveOperation.args._troveId.toString(16));
       }
     }
+
     return null;
   },
 
@@ -327,5 +332,23 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
     }
 
     throw new Error("Not implemented");
+  },
+
+  async postFlowCheck({ request, steps }) {
+    const lastStep = steps?.at(-1);
+
+    if (lastStep?.txStatus !== "post-check" || !isTroveId(lastStep.txReceiptData)) {
+      return;
+    }
+
+    const prefixedTroveId = getPrefixedTroveId(
+      request.collIndex,
+      lastStep.txReceiptData,
+    );
+
+    while (true) {
+      const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
+      if (trove !== null) return;
+    }
   },
 };

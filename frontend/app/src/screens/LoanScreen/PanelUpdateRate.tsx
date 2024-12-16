@@ -1,5 +1,5 @@
 import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
-import type { PositionLoan } from "@/src/types";
+import type { PositionLoanCommitted } from "@/src/types";
 
 import { ARROW_RIGHT } from "@/src/characters";
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -25,7 +25,7 @@ import { useState } from "react";
 export function PanelUpdateRate({
   loan,
 }: {
-  loan: PositionLoan;
+  loan: PositionLoanCommitted;
 }) {
   const account = useAccount();
   const txFlow = useTransactionFlow();
@@ -79,7 +79,8 @@ export function PanelUpdateRate({
     && debt.parsed
     && dn.gt(debt.parsed, 0)
     && interestRate
-    && dn.gt(interestRate, 0);
+    && dn.gt(interestRate, 0)
+    && (!dn.eq(interestRate, loan.interestRate) || loan.batchManager !== interestRateDelegate);
 
   return (
     <>
@@ -87,6 +88,7 @@ export function PanelUpdateRate({
         // “Interest rate”
         field={
           <InterestRateField
+            inputId="input-interest-rate"
             collIndex={loan.collIndex}
             debt={debt.parsed}
             delegate={interestRateDelegate}
@@ -185,8 +187,8 @@ export function PanelUpdateRate({
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position interest rate has been updated successfully.",
 
-                prevLoanPosition: { ...loan },
-                loanPosition: {
+                prevLoan: { ...loan },
+                loan: {
                   ...loan,
                   batchManager: interestRateMode === "delegate" ? interestRateDelegate : null,
                   interestRate,

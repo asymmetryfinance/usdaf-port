@@ -3,16 +3,21 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { MAX_UPFRONT_FEE } from "@/src/constants";
+import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLeverDownTroveParams, getLeverUpTroveParams } from "@/src/liquity-leverage";
-import { getCollToken, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
-import { vDnum, vPositionLoan } from "@/src/valibot-utils";
+import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
+import { isTroveId } from "@/src/types";
+import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
+import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
+import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("updateLeveragePosition");
 
@@ -43,19 +48,21 @@ const RequestSchema = v.object({
     ]),
   ]),
 
-  prevLoan: vPositionLoan(),
-  loan: vPositionLoan(),
+  prevLoan: vPositionLoanCommited(),
+  loan: vPositionLoanCommited(),
 });
 
 export type Request = v.InferOutput<typeof RequestSchema>;
 
 type Step =
+  | "approveLst"
   | "decreaseDeposit"
   | "increaseDeposit"
   | "leverDownTrove"
   | "leverUpTrove";
 
 const stepNames: Record<Step, string> = {
+  approveLst: "Approve {tokenName}",
   decreaseDeposit: "Decrease Deposit",
   increaseDeposit: "Increase Deposit",
   leverDownTrove: "Decrease Leverage",
@@ -84,11 +91,16 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
       .with({ data: P.nonNullable }, () => "success")
       .otherwise(() => "error");
 
+    const borrowedWithFee = dn.add(
+      loan.borrowed,
+      upfrontFeeData.data?.upfrontFee ?? dn.from(0, 18),
+    );
+
     return (
       <LoanCard
         leverageMode={true}
         loadingState={loadingState}
-        loan={loan}
+        loan={{ ...loan, borrowed: borrowedWithFee }}
         prevLoan={prevLoan}
         onRetry={() => {
           upfrontFeeData.refetch();
@@ -110,7 +122,10 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
     const collPrice = usePrice(collateral?.symbol ?? null);
     const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
 
-    return upfrontFeeData.data && (
+    const debtChangeWithFee = upfrontFeeData.data?.debtChangeWithFee;
+    const isBorrowing = upfrontFeeData.data?.isBorrowing;
+
+    return (
       <>
         {depositChange !== null && (
           <TransactionDetailsRow
@@ -120,7 +135,7 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
                 key="start"
                 fallback="…"
                 value={depositChange}
-                suffix={` ${collateral.symbol}`}
+                suffix={` ${collateral.name}`}
                 format={{
                   digits: 2,
                   signDisplay: "exceptZero",
@@ -137,7 +152,7 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
         )}
         {leverageFactorChange && (
           <TransactionDetailsRow
-            label={upfrontFeeData.data.isBorrowing ? "Leverage increase" : "Leverage decrease"}
+            label={isBorrowing ? "Leverage increase" : "Leverage decrease"}
             value={[
               <div key="start">
                 {fmtnum(leverageFactorChange[1] - leverageFactorChange[0], {
@@ -152,21 +167,23 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
           />
         )}
         <TransactionDetailsRow
-          label={upfrontFeeData.data.isBorrowing ? "Additional debt" : "Debt reduction"}
+          label={isBorrowing ? "Additional debt" : "Debt reduction"}
           value={[
             <Amount
               key="start"
               fallback="…"
-              value={upfrontFeeData.data.debtChangeWithFee}
+              value={debtChangeWithFee}
               suffix=" BOLD"
             />,
-            dn.gt(upfrontFeeData.data.upfrontFee, 0) && (
+            upfrontFeeData.data?.upfrontFee
+            && dn.gt(upfrontFeeData.data.upfrontFee, 0)
+            && (
               <Amount
                 key="end"
                 fallback="…"
                 prefix="Incl. "
                 value={upfrontFeeData.data.upfrontFee}
-                suffix=" BOLD upfront fee"
+                suffix=" BOLD interest rate adjustment fee"
               />
             ),
           ]}
@@ -179,10 +196,31 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
     return v.parse(RequestSchema, request);
   },
 
-  async getSteps({ request }) {
-    const { depositChange, leverageFactorChange } = request;
+  async getSteps({ account, contracts, request, wagmiConfig }) {
+    const { depositChange, leverageFactorChange, loan } = request;
+    const collateral = contracts.collaterals[loan.collIndex];
 
     const steps: Step[] = [];
+
+    // only check approval for non-ETH collaterals
+    if (collateral.symbol !== "ETH" && depositChange && dn.gt(depositChange, 0)) {
+      const { LeverageLSTZapper, CollToken } = collateral.contracts;
+
+      const allowance = dnum18(
+        await readContract(wagmiConfig, {
+          ...CollToken,
+          functionName: "allowance",
+          args: [
+            account.address ?? ADDRESS_ZERO,
+            LeverageLSTZapper.address,
+          ],
+        }),
+      );
+
+      if (dn.lt(allowance, depositChange)) {
+        steps.push("approveLst");
+      }
+    }
 
     if (depositChange) {
       steps.push(dn.gt(depositChange, 0) ? "increaseDeposit" : "decreaseDeposit");
@@ -196,8 +234,12 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
     return steps;
   },
 
-  getStepName(stepId) {
-    return stepNames[stepId];
+  getStepName(stepId, { request }) {
+    const token = getCollToken(request.loan.collIndex);
+    if (!token) {
+      throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+    }
+    return stepNames[stepId].replace(/\{tokenName\}/g, token.name);
   },
 
   async writeContractParams(stepId, { account, contracts, request, wagmiConfig }) {
@@ -210,6 +252,20 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
 
     if (!account.address) {
       throw new Error("Account address is required");
+    }
+
+    if (stepId === "approveLst") {
+      if (!request.depositChange) {
+        throw new Error("Invalid step: depositChange is required with approveLst");
+      }
+      return {
+        ...collateral.contracts.CollToken,
+        functionName: "approve",
+        args: [
+          Zapper.address,
+          request.depositChange[0],
+        ],
+      };
     }
 
     if (stepId === "increaseDeposit") {
@@ -291,6 +347,29 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
     }
 
     throw new Error("Invalid step");
+  },
+
+  async postFlowCheck({ request, steps }) {
+    const lastStep = steps?.at(-1);
+    if (lastStep?.txStatus !== "post-check" || !isTroveId(lastStep.txReceiptData)) {
+      return;
+    }
+
+    const lastUpdate = request.loan.updatedAt;
+
+    const prefixedTroveId = getPrefixedTroveId(
+      request.loan.collIndex,
+      lastStep.txReceiptData,
+    );
+
+    while (true) {
+      const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
+
+      // trove found and updated: check done
+      if (trove && Number(trove.updatedAt) * 1000 !== lastUpdate) {
+        break;
+      }
+    }
   },
 };
 

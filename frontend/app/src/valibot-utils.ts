@@ -142,18 +142,61 @@ export function vPositionStake() {
   });
 }
 
+const VPositionLoanBase = v.object({
+  type: v.union([
+    v.literal("borrow"),
+    v.literal("leverage"),
+  ]),
+  batchManager: v.union([v.null(), vAddress()]),
+  borrowed: vDnum(),
+  borrower: vAddress(),
+  collIndex: vCollIndex(),
+  deposit: vDnum(),
+  interestRate: vDnum(),
+  status: v.union([
+    v.literal("active"),
+    v.literal("closed"),
+    v.literal("liquidated"),
+    v.literal("redeemed"),
+  ]),
+});
+
+export function vPositionLoanCommited() {
+  return v.intersect([
+    VPositionLoanBase,
+    v.object({
+      troveId: vTroveId(),
+      updatedAt: v.number(),
+      createdAt: v.number(),
+    }),
+  ]);
+}
+
+export function vPositionLoanUncommited() {
+  return v.intersect([
+    VPositionLoanBase,
+    v.object({
+      troveId: v.null(),
+    }),
+  ]);
+}
+
 export function vPositionLoan() {
+  return v.intersect([
+    vPositionLoanCommited(),
+    vPositionLoanUncommited(),
+  ]);
+}
+
+export function vPositionEarn() {
   return v.object({
-    type: v.union([
-      v.literal("borrow"),
-      v.literal("leverage"),
-    ]),
-    batchManager: v.union([v.null(), vAddress()]),
-    borrowed: vDnum(),
-    borrower: vAddress(),
+    type: v.literal("earn"),
+    owner: vAddress(),
     collIndex: vCollIndex(),
     deposit: vDnum(),
-    interestRate: vDnum(),
-    troveId: vTroveId(),
+    rewards: v.object({
+      bold: vDnum(),
+      coll: vDnum(),
+    }),
   });
 }

@@ -4,11 +4,12 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
 import { getCloseFlashLoanAmount } from "@/src/liquity-leverage";
-import { getCollToken } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
-import { vPositionLoan } from "@/src/valibot-utils";
+import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
+import { vPositionLoanCommited } from "@/src/valibot-utils";
 import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
@@ -32,7 +33,7 @@ const RequestSchema = v.object({
   ]),
   successMessage: v.string(),
 
-  loan: vPositionLoan(),
+  loan: vPositionLoanCommited(),
   repayWithCollateral: v.boolean(),
 });
 
@@ -102,7 +103,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
           ]}
         />
         <TransactionDetailsRow
-          label="You reclaim"
+          label="You reclaim collateral"
           value={[
             <Amount
               key="start"
@@ -112,7 +113,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
           ]}
         />
         <TransactionDetailsRow
-          label="Gas compensation refund"
+          label="You reclaim the gas compensation deposit"
           value={[
             <div
               key="start"
@@ -143,13 +144,13 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
       throw new Error("Account address is required");
     }
 
-    const [debt] = await readContract(wagmiConfig, {
+    const { entireDebt } = await readContract(wagmiConfig, {
       ...coll.contracts.TroveManager,
-      functionName: "Troves",
+      functionName: "getLatestTroveData",
       args: [BigInt(loan.troveId)],
     });
 
-    const isBoldApproved = request.repayWithCollateral || !dn.gt(debt, [
+    const isBoldApproved = request.repayWithCollateral || !dn.gt(entireDebt, [
       await readContract(wagmiConfig, {
         ...contracts.BoldToken,
         functionName: "allowance",
@@ -178,9 +179,9 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
     const coll = contracts.collaterals[loan.collIndex];
 
     if (stepId === "approveBold") {
-      const [debt] = await readContract(wagmiConfig, {
+      const { entireDebt } = await readContract(wagmiConfig, {
         ...coll.contracts.TroveManager,
-        functionName: "Troves",
+        functionName: "getLatestTroveData",
         args: [BigInt(loan.troveId)],
       });
 
@@ -191,7 +192,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
       return {
         ...contracts.BoldToken,
         functionName: "approve",
-        args: [Zapper.address, dn.mul([debt, 18], 1.1)[0]], // TODO: calculate the amount to approve in a more precise way
+        args: [Zapper.address, dn.mul([entireDebt, 18], 1.1)[0]], // TODO: calculate the amount to approve in a more precise way
       };
     }
 
@@ -236,5 +237,16 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
     }
 
     throw new Error("Invalid stepId: " + stepId);
+  },
+
+  async postFlowCheck({ request }) {
+    const prefixedTroveId = getPrefixedTroveId(
+      request.loan.collIndex,
+      request.loan.troveId,
+    );
+    while (true) {
+      const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
+      if (trove?.closedAt !== undefined) return;
+    }
   },
 };

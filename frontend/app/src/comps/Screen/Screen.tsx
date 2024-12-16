@@ -44,35 +44,32 @@ export function Screen({
     },
   });
 
-  const screenSpring = useSpring({
-    from: {
-      opacity: 0,
-      transform: `
-        scale3d(1.03, 1.03, 1)
-        translate3d(0, 40px, 0)
-      `,
-    },
-    to: {
-      opacity: 1,
-      transform: `
-        scale3d(1, 1, 1)
-        translate3d(0, 0px, 0)
-      `,
-    },
-    delay: 100,
-    config: {
-      mass: 1,
-      tension: 1600,
-      friction: 120,
-    },
-  });
-
   const headingSpring = useSpring({
     from: {
       opacity: 0,
       transform: `
-        scale3d(1.03, 1.03, 1)
-        translate3d(0, 16px, 0)
+        translate(0, 48px)
+      `,
+    },
+    to: {
+      opacity: 1,
+      transform: `
+        translate(0, 0px)
+      `,
+    },
+    config: {
+      mass: 1,
+      tension: 2200,
+      friction: 220,
+    },
+  });
+
+  const screenSpring = useSpring({
+    from: {
+      opacity: 0,
+      transform: `
+        scale3d(0.95, 0.95, 1)
+        translate3d(0, 20px, 0)
       `,
     },
     to: {
@@ -82,10 +79,11 @@ export function Screen({
         translate3d(0, 0px, 0)
       `,
     },
+    delay: 150,
     config: {
       mass: 2,
       tension: 2400,
-      friction: 120,
+      friction: 220,
     },
   });
 
@@ -127,12 +125,17 @@ export function Screen({
         )}
       </header>
     )
-    : heading;
+    : (
+      <div style={{ width }}>
+        {heading}
+      </div>
+    );
 
   return (
     <div
       className={cx(
         css({
+          position: "relative",
           flexGrow: 1,
           display: "flex",
           gap: 48,
@@ -156,10 +159,22 @@ export function Screen({
                 base: "static",
                 large: "absolute",
               },
-              left: 100,
+              width: {
+                base: "100%",
+                large: "auto",
+              },
+              maxWidth: {
+                base: 540,
+                large: "100%",
+              },
+              marginBottom: {
+                base: -16,
+                large: 0,
+              },
+              left: 0,
+              zIndex: 1,
             })}
             style={{
-              width,
               transform: style.transform,
               opacity: style.opacity.to([0, 0.5, 1], [0, 1, 1]),
             }}
@@ -189,6 +204,8 @@ export function Screen({
           display: "flex",
           flexDirection: "column",
           position: "relative",
+          transformOrigin: "50% 0",
+          willChange: "transform, opacity",
         })}
         style={{
           gap,
