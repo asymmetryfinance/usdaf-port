@@ -254,7 +254,20 @@ function LoanCardHeading({
         }}
       >
         {mode === "leverage"
-          ? <IconLeverage size={16} />
+          ? (
+            inheritColor
+              ? <IconLeverage size={16} />
+              : (
+                <div
+                  className={css({
+                    display: "flex",
+                    color: "brandGreen",
+                  })}
+                >
+                  <IconLeverage size={16} />
+                </div>
+              )
+          )
           : <IconBorrow size={16} />}
       </div>
       <div>{title}</div>
@@ -431,8 +444,8 @@ function LoanCard({
                 position: "absolute",
                 inset: 0,
                 padding: "16px 16px 24px",
-                background: "strongSurface",
-                color: "strongSurfaceContent",
+                background: "position",
+                color: "positionContent",
                 borderRadius: 8,
                 userSelect: "none",
               })}
@@ -526,8 +539,8 @@ function LoanCard({
                           </div>
                         ),
                         label: mode === "leverage"
-                          ? "View as loan"
-                          : "View as leverage",
+                          ? "Convert to BOLD loan"
+                          : "Convert to leverage loan",
                       },
                       {
                         icon: (

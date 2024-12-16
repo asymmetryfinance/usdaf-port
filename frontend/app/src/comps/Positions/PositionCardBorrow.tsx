@@ -12,7 +12,7 @@ import { HFlex, IconBorrow, StatusDot, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 import { PositionCard } from "./PositionCard";
-import { CardRow, CardRows, EditSquare } from "./shared";
+import { CardRow, CardRows } from "./shared";
 
 export function PositionCardBorrow({
   batchManager,
@@ -83,7 +83,15 @@ export function PositionCardBorrow({
             {statusTag}
           </div>
         }
-        contextual={<EditSquare />}
+        contextual={
+          <div
+            className={css({
+              color: "positionContent",
+            })}
+          >
+            <IconBorrow size={32} />
+          </div>
+        }
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
