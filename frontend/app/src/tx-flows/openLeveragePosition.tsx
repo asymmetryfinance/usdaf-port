@@ -109,7 +109,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
               fallback="…"
               prefix="Incl. "
               value={upfrontFee.data}
-              suffix=" BOLD upfront fee"
+              suffix=" BOLD interest rate adjustment fee"
             />,
           ]}
         />
@@ -261,7 +261,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
           boldAmount: params.effectiveBoldAmount,
           upperHint: 0n,
           lowerHint: 0n,
-          annualInterestRate: loan.interestRate[0],
+          annualInterestRate: loan.batchManager ? 0n : loan.interestRate[0],
           batchManager: loan.batchManager ?? ADDRESS_ZERO,
           maxUpfrontFee: MAX_UPFRONT_FEE,
           addManager: ADDRESS_ZERO,
@@ -291,7 +291,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
           boldAmount: params.effectiveBoldAmount,
           upperHint: 0n,
           lowerHint: 0n,
-          annualInterestRate: loan.interestRate[0],
+          annualInterestRate: loan.batchManager ? 0n : loan.interestRate[0],
           batchManager: loan.batchManager ?? ADDRESS_ZERO,
           maxUpfrontFee: MAX_UPFRONT_FEE,
           addManager: ADDRESS_ZERO,
@@ -305,7 +305,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     throw new Error("Not implemented");
   },
 
-  async postFlowCheck({ request, steps }) {
+  async postFlowCheck({ request, steps, storedState }) {
     const lastStep = steps?.at(-1);
 
     if (lastStep?.txStatus !== "post-check" || !isTroveId(lastStep.txReceiptData)) {
@@ -315,7 +315,17 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     const prefixedTroveId = getPrefixedTroveId(request.loan.collIndex, lastStep.txReceiptData);
     while (true) {
       const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
-      if (trove !== null) return;
+      if (trove !== null) {
+        storedState.setState(({ loanModes }) => {
+          return {
+            loanModes: {
+              ...loanModes,
+              [prefixedTroveId]: "leverage",
+            },
+          };
+        });
+        return;
+      }
     }
   },
 };

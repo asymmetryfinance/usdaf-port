@@ -3,9 +3,10 @@ import type { PositionEarn } from "@/src/types";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { getCollToken, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconEarn, StrongCard, TokenIcon } from "@liquity2/uikit";
+import { HFlex, IconEarn, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
-import { CardRow, CardRows, EditSquare } from "./shared";
+import { PositionCard } from "./PositionCard";
+import { CardRow, CardRows } from "./shared";
 
 export function PositionCardEarn({
   owner,
@@ -27,7 +28,7 @@ export function PositionCardEarn({
       legacyBehavior
       passHref
     >
-      <StrongCard
+      <PositionCard
         heading={[
           <div
             key="start"
@@ -35,21 +36,21 @@ export function PositionCardEarn({
               display: "flex",
               alignItems: "center",
               gap: 8,
-              color: "strongSurfaceContent",
+              color: "positionContent",
             })}
           >
-            <div
-              className={css({
-                display: "flex",
-                color: "brandLightBlue",
-              })}
-            >
-              <IconEarn size={16} />
-            </div>
             Earn position
           </div>,
         ]}
-        contextual={<EditSquare />}
+        contextual={
+          <div
+            className={css({
+              color: "positionContent",
+            })}
+          >
+            <IconEarn size={32} />
+          </div>
+        }
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
@@ -76,14 +77,14 @@ export function PositionCardEarn({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContentAlt",
+                      color: "positionContentAlt",
                     })}
                   >
                     Current APR
                   </div>
                   <div
                     className={css({
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     <Amount
@@ -107,7 +108,7 @@ export function PositionCardEarn({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContentAlt",
+                      color: "positionContentAlt",
                     })}
                   >
                     Rewards
@@ -117,7 +118,7 @@ export function PositionCardEarn({
                       display: "flex",
                       alignItems: "center",
                       gap: 4,
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     <Amount
@@ -132,7 +133,7 @@ export function PositionCardEarn({
                       display: "flex",
                       alignItems: "center",
                       gap: 4,
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     <Amount

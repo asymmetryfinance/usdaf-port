@@ -11,6 +11,7 @@
 // - Flow context: a transaction flow as stored in local storage (steps + request).
 
 import type { Contracts } from "@/src/contracts";
+import type { Request as ClaimCollateralSurplusRequest } from "@/src/tx-flows/claimCollateralSurplus";
 import type { Request as CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import type { Request as EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
 import type { Request as EarnDepositRequest } from "@/src/tx-flows/earnDeposit";
@@ -31,6 +32,8 @@ import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { getContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
+import { useStoredState } from "@/src/services/StoredState";
+import { claimCollateralSurplus } from "@/src/tx-flows/claimCollateralSurplus";
 import { closeLoanPosition } from "@/src/tx-flows/closeLoanPosition";
 import { earnClaimRewards } from "@/src/tx-flows/earnClaimRewards";
 import { earnDeposit } from "@/src/tx-flows/earnDeposit";
@@ -54,6 +57,7 @@ import { useTransactionReceipt, useWriteContract } from "wagmi";
 const TRANSACTION_FLOW_KEY = `${LOCAL_STORAGE_PREFIX}transaction_flow`;
 
 export type FlowRequest =
+  | ClaimCollateralSurplusRequest
   | CloseLoanPositionRequest
   | EarnClaimRewardsRequest
   | EarnDepositRequest
@@ -73,6 +77,7 @@ const flowDeclarations: {
     any // Use 'any' here to allow any StepId type
   >;
 } = {
+  claimCollateralSurplus,
   closeLoanPosition,
   earnClaimRewards,
   earnDeposit,
@@ -88,6 +93,7 @@ const flowDeclarations: {
 };
 
 const FlowIdSchema = v.union([
+  v.literal("claimCollateralSurplus"),
   v.literal("closeLoanPosition"),
   v.literal("earnClaimRewards"),
   v.literal("earnDeposit"),
@@ -220,6 +226,7 @@ type FlowArgs<FR extends FlowRequest> = {
   contracts: Contracts;
   request: FR;
   steps: FlowSteps | null;
+  storedState: ReturnType<typeof useStoredState>;
   wagmiConfig: ReturnType<typeof useWagmiConfig>;
 };
 
@@ -363,6 +370,7 @@ function useSteps<FR extends FlowRequest>({
   onSteps: (steps: string[]) => void;
 }) {
   const contracts = getContracts();
+  const storedState = useStoredState();
 
   const steps = useQuery({
     enabled,
@@ -382,6 +390,7 @@ function useSteps<FR extends FlowRequest>({
         contracts,
         request: flow.request,
         steps: flow.steps,
+        storedState,
         wagmiConfig,
       });
     },
@@ -497,6 +506,7 @@ function useTransactionExecution({
   const account = useAccount();
   const contracts = getContracts();
   const wagmiConfig = useWagmiConfig();
+  const storedState = useStoredState();
 
   // step status updates
   const setStepToAwaitingSignature = () => {
@@ -577,6 +587,7 @@ function useTransactionExecution({
           contracts,
           request: flow.request,
           steps: flow.steps,
+          storedState,
           wagmiConfig,
         });
         // check passed
@@ -592,6 +603,7 @@ function useTransactionExecution({
     contracts,
     flow,
     flowDeclaration,
+    storedState,
     wagmiConfig,
   ]);
 
@@ -645,6 +657,7 @@ function useTransactionExecution({
       contracts,
       request: flow.request,
       steps: flow.steps,
+      storedState,
       wagmiConfig,
     });
 
@@ -675,13 +688,11 @@ function useResetQueriesOnPathChange(condition: boolean) {
   useEffect(() => {
     // when the condition changes, set a flag to invalidate
     if (pathName === "/transactions" && condition) {
-      console.log("SETTING INVALIDATE ON PATH CHANGE");
       invalidateOnPathChange.current = true;
       return;
     }
     // when the path changes, invalidate if the flag is set
     if (pathName !== "/transactions" && invalidateOnPathChange.current) {
-      console.log("CLEARING INVALIDATE ON PATH CHANGE");
       queryClient.resetQueries();
       invalidateOnPathChange.current = false;
     }
@@ -694,10 +705,10 @@ const FlowContextStorage = {
   },
   get(): FlowContext<FlowRequest> | null {
     try {
-      const storedState = (localStorage.getItem(TRANSACTION_FLOW_KEY) ?? "").trim();
-      if (!storedState) return null;
+      const storedFlowState = (localStorage.getItem(TRANSACTION_FLOW_KEY) ?? "").trim();
+      if (!storedFlowState) return null;
 
-      const { request, steps, account } = v.parse(FlowStateSchema, jsonParseWithDnum(storedState));
+      const { request, steps, account } = v.parse(FlowStateSchema, jsonParseWithDnum(storedFlowState));
       const declaration = getFlowDeclaration(request.flowId);
       const parsedRequest = declaration.parseRequest(request);
       let parsedSteps = v.parse(FlowStepsSchema, steps);

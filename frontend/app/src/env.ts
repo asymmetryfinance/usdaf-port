@@ -50,6 +50,7 @@ export const EnvSchema = v.pipe(
 
     COLL_0_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
     COLL_0_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
+    COLL_0_CONTRACT_COLL_SURPLUS_POOL: v.optional(vAddress()),
     COLL_0_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
     COLL_0_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
     COLL_0_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
@@ -62,6 +63,7 @@ export const EnvSchema = v.pipe(
 
     COLL_1_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
     COLL_1_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
+    COLL_1_CONTRACT_COLL_SURPLUS_POOL: v.optional(vAddress()),
     COLL_1_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
     COLL_1_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
     COLL_1_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
@@ -74,6 +76,7 @@ export const EnvSchema = v.pipe(
 
     COLL_2_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
     COLL_2_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
+    COLL_2_CONTRACT_COLL_SURPLUS_POOL: v.optional(vAddress()),
     COLL_2_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
     COLL_2_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
     COLL_2_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
@@ -84,7 +87,8 @@ export const EnvSchema = v.pipe(
     COLL_2_CONTRACT_TROVE_NFT: v.optional(vAddress()),
     COLL_2_TOKEN_ID: v.optional(CollateralSymbolSchema),
 
-    DEMO_MODE: vEnvFlag(),
+    DEMO_MODE: v.pipe(v.optional(vEnvFlag()), v.transform((value) => value ?? false)),
+    VERCEL_ANALYTICS: v.pipe(v.optional(v.string()), v.transform((value) => value ?? false)),
     WALLET_CONNECT_PROJECT_ID: v.string(),
   }),
   v.transform((data) => {
@@ -93,6 +97,7 @@ export const EnvSchema = v.pipe(
     const contractsEnvNames = [
       "ACTIVE_POOL",
       "BORROWER_OPERATIONS",
+      "COLL_SURPLUS_POOL",
       "COLL_TOKEN",
       "DEFAULT_POOL",
       "LEVERAGE_ZAPPER",
@@ -129,7 +134,7 @@ export const EnvSchema = v.pipe(
         break;
       }
       if (contractsCount !== contractsEnvNames.length) {
-        throw new Error(`Incomplete contracts for collateral ${index}`);
+        throw new Error(`Incomplete contracts for collateral ${index} (${contractsCount}/${contractsEnvNames.length})`);
       }
 
       if (!isCollIndex(index)) {
@@ -185,6 +190,7 @@ const parsedEnv = v.parse(EnvSchema, {
 
   COLL_0_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_ACTIVE_POOL,
   COLL_0_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_BORROWER_OPERATIONS,
+  COLL_0_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_COLL_SURPLUS_POOL,
   COLL_0_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_COLL_TOKEN,
   COLL_0_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_DEFAULT_POOL,
   COLL_0_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_LEVERAGE_ZAPPER,
@@ -196,6 +202,7 @@ const parsedEnv = v.parse(EnvSchema, {
 
   COLL_1_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_ACTIVE_POOL,
   COLL_1_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_BORROWER_OPERATIONS,
+  COLL_1_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_COLL_SURPLUS_POOL,
   COLL_1_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_COLL_TOKEN,
   COLL_1_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_DEFAULT_POOL,
   COLL_1_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_LEVERAGE_ZAPPER,
@@ -207,6 +214,7 @@ const parsedEnv = v.parse(EnvSchema, {
 
   COLL_2_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_ACTIVE_POOL,
   COLL_2_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_BORROWER_OPERATIONS,
+  COLL_2_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_COLL_SURPLUS_POOL,
   COLL_2_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_COLL_TOKEN,
   COLL_2_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_DEFAULT_POOL,
   COLL_2_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_LEVERAGE_ZAPPER,
@@ -217,6 +225,7 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_2_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_NFT,
 
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
+  VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 });
 
@@ -245,5 +254,6 @@ export const {
   CONTRACT_WETH,
   DELEGATE_AUTO,
   DEMO_MODE,
+  VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,
 } = parsedEnv;

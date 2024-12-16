@@ -8,12 +8,12 @@ import { DEMO_MODE } from "@/src/env";
 import { useStakePosition } from "@/src/liquity-utils";
 import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
-import { StrongCard } from "@liquity2/uikit";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { useEffect, useRef, useState } from "react";
 import { match, P } from "ts-pattern";
 import { NewPositionCard } from "./NewPositionCard";
+import { PositionCard } from "./PositionCard";
 import { PositionCardEarn } from "./PositionCardEarn";
 import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardStake } from "./PositionCardStake";
@@ -25,9 +25,11 @@ export function Positions({
   columns,
   showNewPositionCard = true,
   title = (mode) => (
-    mode === "actions"
-      ? content.home.openPositionTitle
-      : content.home.myPositionsTitle
+    mode === "loading"
+      ? " "
+      : mode === "positions"
+      ? content.home.myPositionsTitle
+      : content.home.openPositionTitle
   ),
 }: {
   address: null | Address;
@@ -135,9 +137,9 @@ function PositionsGroup({
       return cards;
     })
     .with("loading", () => [
-      [0, <StrongCard key="0" loading />],
-      [1, <StrongCard key="1" loading />],
-      [2, <StrongCard key="2" loading />],
+      [0, <PositionCard key="0" loading />],
+      [1, <PositionCard key="1" loading />],
+      [2, <PositionCard key="2" loading />],
     ])
     .with("actions", () =>
       showNewPositionCard
@@ -154,7 +156,7 @@ function PositionsGroup({
     columns = 4;
   }
 
-  const cardHeight = mode === "actions" ? 144 : 188;
+  const cardHeight = mode === "actions" ? 144 : 180;
   const rows = Math.ceil(cards.length / columns);
   const containerHeight = cardHeight * rows + 24 * (rows - 1);
 
@@ -210,7 +212,7 @@ function PositionsGroup({
             userSelect: "none",
           })}
           style={{
-            paddingBottom: mode === "actions" ? 48 : 32,
+            paddingBottom: 32,
           }}
           onClick={onTitleClick}
         >

@@ -10,7 +10,7 @@ import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { Value } from "@/src/comps/Value/Value";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
-import { ETH_MAX_RESERVE } from "@/src/constants";
+import { ETH_MAX_RESERVE, MAX_LTV_RESERVE_RATIO, MIN_DEBT } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
@@ -116,18 +116,16 @@ export function PanelUpdateLeveragePosition({
     collPrice: collPrice ?? dnum18(0),
     collToken,
     depositPreLeverage: newDepositPreLeverage,
-    maxLtvAllowedRatio: 1, // allow up to the max. LTV
+    maxLtvAllowedRatio: 1 - MAX_LTV_RESERVE_RATIO,
   });
 
   const collBalance = useBalance(account.address, collToken.symbol);
 
-  const collMax = depositMode === "remove" ? initialLoanDetails.depositPreLeverage : (
-    collBalance.data
-      ? dn.sub(
-        collBalance.data,
-        collToken?.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
-      )
-      : dnum18(0)
+  const collMax = depositMode === "remove" ? null : (
+    collBalance.data && dn.sub(
+      collBalance.data,
+      collToken?.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
+    )
   );
 
   useEffect(() => {
@@ -162,7 +160,9 @@ export function PanelUpdateLeveragePosition({
       ) || (
         initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor
       )
-    );
+    )
+    // above the minimum debt
+    && newLoanDetails.debt && dn.gt(newLoanDetails.debt, MIN_DEBT);
 
   return (
     <>
@@ -171,6 +171,7 @@ export function PanelUpdateLeveragePosition({
           field={
             <InputField
               {...depositChange.inputFieldProps}
+              id="input-deposit-change"
               contextual={
                 <InputTokenBadge
                   background={false}
@@ -264,7 +265,18 @@ export function PanelUpdateLeveragePosition({
         />
 
         <Field
-          field={<LeverageField {...leverageField} />}
+          field={
+            <LeverageField
+              inputId="input-liquidation-price"
+              drawer={newLoanDetails.debt && dn.lt(newLoanDetails.debt, MIN_DEBT)
+                ? {
+                  mode: "error",
+                  message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
+                }
+                : null}
+              {...leverageField}
+            />
+          }
           footer={[
             {
               start: <Field.FooterInfo label="ETH liquidation price" />,

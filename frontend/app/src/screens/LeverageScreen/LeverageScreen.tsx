@@ -17,6 +17,7 @@ import {
   INTEREST_RATE_DEFAULT,
   LEVERAGE_MAX_SLIPPAGE,
   MAX_COLLATERAL_DEPOSITS,
+  MIN_DEBT,
 } from "@/src/constants";
 import content from "@/src/content";
 import { getContracts, getProtocolContract } from "@/src/contracts";
@@ -89,7 +90,7 @@ export function LeverageScreen() {
   const collPrice = usePrice(collToken.symbol);
 
   const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
-  const depositPreLeverage = useInputFieldValue((value) => `${fmtnum(value)} ${collToken.name}`, {
+  const depositPreLeverage = useInputFieldValue(fmtnum, {
     validate: (parsed, value) => {
       const isAboveMax = maxCollDeposit && parsed && dn.gt(parsed, maxCollDeposit);
       return {
@@ -129,6 +130,7 @@ export function LeverageScreen() {
 
   const newLoan: PositionLoanUncommitted = {
     type: "leverage",
+    status: "active",
     batchManager: interestRateDelegate,
     borrowed: leverageField.debt ?? dn.from(0, 18),
     borrower: account.address ?? ADDRESS_ZERO,
@@ -149,10 +151,14 @@ export function LeverageScreen() {
     loan: newLoan,
   });
 
-  const leverageSlippageElements = useSlippageElements(leverageSlippage, hasDeposit);
+  const leverageSlippageElements = useSlippageElements(leverageSlippage, hasDeposit && account.isConnected);
 
   const hasAllowedSlippage = leverageSlippage.data
     && dn.lte(leverageSlippage.data, LEVERAGE_MAX_SLIPPAGE);
+
+  const leverageFieldDrawer = (hasDeposit && newLoan.borrowed && dn.lt(newLoan.borrowed, MIN_DEBT))
+    ? { mode: "error" as const, message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+    : leverageSlippageElements.drawer;
 
   const allowSubmit = account.isConnected
     && hasDeposit
@@ -190,6 +196,7 @@ export function LeverageScreen() {
         <Field
           field={
             <InputField
+              id="input-deposit"
               contextual={
                 <Dropdown
                   items={collateralTokens.map(({ symbol, name }) => ({
@@ -251,7 +258,8 @@ export function LeverageScreen() {
         <Field
           field={
             <LeverageField
-              drawer={leverageSlippageElements.drawer}
+              drawer={leverageFieldDrawer}
+              inputId="input-liquidation-price"
               onDrawerClose={leverageSlippageElements.onClose}
               {...leverageField}
             />
@@ -295,42 +303,41 @@ export function LeverageScreen() {
           }}
         />
 
-        <VFlex gap={0}>
-          <Field
-            field={
-              <InterestRateField
-                collIndex={collIndex}
-                debt={leverageField.debt}
-                delegate={interestRateDelegate}
-                interestRate={interestRate}
-                mode={interestRateMode}
-                onChange={setInterestRate}
-                onDelegateChange={setInterestRateDelegate}
-                onModeChange={setInterestRateMode}
+        <Field
+          field={
+            <InterestRateField
+              collIndex={collIndex}
+              debt={leverageField.debt}
+              delegate={interestRateDelegate}
+              inputId="input-interest-rate"
+              interestRate={interestRate}
+              mode={interestRateMode}
+              onChange={setInterestRate}
+              onDelegateChange={setInterestRateDelegate}
+              onModeChange={setInterestRateMode}
+            />
+          }
+          footer={{
+            start: (
+              <Field.FooterInfoRedemptionRisk
+                riskLevel={redemptionRisk}
               />
-            }
-            footer={{
-              start: (
-                <Field.FooterInfoRedemptionRisk
-                  riskLevel={redemptionRisk}
-                />
-              ),
-              end: (
-                <span
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    color: "contentAlt",
-                  })}
-                >
-                  <IconSuggestion size={16} />
-                  <span>You can adjust interest rate later</span>
-                </span>
-              ),
-            }}
-          />
-        </VFlex>
+            ),
+            end: (
+              <span
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  color: "contentAlt",
+                })}
+              >
+                <IconSuggestion size={16} />
+                <span>You can adjust interest rate later</span>
+              </span>
+            ),
+          }}
+        />
 
         <RedemptionInfo />
 
@@ -464,6 +471,7 @@ function useSlippageElements(
   onClose: () => void;
 } {
   const [forceDrawerClosed, setForceDrawerClosed] = useState(false);
+
   useEffect(() => {
     setForceDrawerClosed(false);
   }, [leverageSlippage.status]);
@@ -481,21 +489,31 @@ function useSlippageElements(
   }
 
   if (leverageSlippage.status === "error") {
-    const message = (
-      <HFlex gap={4}>
-        Slippage calculation failed.
-        <TextButton
-          size="small"
-          label="retry"
-          onClick={() => {
-            leverageSlippage.refetch();
-          }}
-        />
-      </HFlex>
+    const retry = (
+      <TextButton
+        size="small"
+        label="retry"
+        onClick={() => {
+          leverageSlippage.refetch();
+        }}
+      />
     );
     return {
-      drawer: { mode: "error", message },
-      message,
+      drawer: {
+        mode: "error",
+        message: (
+          <HFlex gap={4}>
+            <div>Slippage calculation failed.</div>
+            {retry}
+          </HFlex>
+        ),
+      },
+      message: (
+        <VFlex gap={4}>
+          <div>Slippage calculation failed. ({leverageSlippage.error.message})</div>
+          {retry}
+        </VFlex>
+      ),
       mode: "error",
       onClose,
     };

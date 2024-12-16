@@ -80,7 +80,8 @@ export function BorrowScreen() {
   const collateral = collaterals[collIndex];
 
   const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
-  const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`, {
+
+  const deposit = useInputFieldValue(fmtnum, {
     validate: (parsed, value) => {
       const isAboveMax = maxCollDeposit && parsed && dn.gt(parsed, maxCollDeposit);
       return {
@@ -140,7 +141,7 @@ export function BorrowScreen() {
         collPrice,
       );
 
-      // don’t show if ltv > MAX_LTV_ALLOWED
+      // don’t show if ltv > max LTV
       if (ltv && dn.gt(ltv, loanDetails.maxLtv)) {
         return null;
       }
@@ -198,6 +199,7 @@ export function BorrowScreen() {
           // “You deposit”
           field={
             <InputField
+              id="input-deposit"
               contextual={
                 <Dropdown
                   items={collaterals.map(({ symbol, name }) => ({
@@ -211,9 +213,8 @@ export function BorrowScreen() {
                   menuWidth={300}
                   onSelect={(index) => {
                     deposit.setValue("");
-                    const { symbol } = collaterals[index];
                     router.push(
-                      `/borrow/${symbol.toLowerCase()}`,
+                      `/borrow/${collaterals[index].symbol.toLowerCase()}`,
                       { scroll: false },
                     );
                   }}
@@ -259,6 +260,7 @@ export function BorrowScreen() {
           // “You borrow”
           field={
             <InputField
+              id="input-debt"
               contextual={
                 <InputField.Badge
                   icon={<TokenIcon symbol="USDAF" />}
@@ -332,6 +334,7 @@ export function BorrowScreen() {
               collIndex={collIndex}
               debt={debt.parsed}
               delegate={interestRateDelegate}
+              inputId="input-interest-rate"
               interestRate={interestRate}
               mode={interestRateMode}
               onChange={setInterestRate}

@@ -79,7 +79,8 @@ export function PanelUpdateRate({
     && debt.parsed
     && dn.gt(debt.parsed, 0)
     && interestRate
-    && dn.gt(interestRate, 0);
+    && dn.gt(interestRate, 0)
+    && (!dn.eq(interestRate, loan.interestRate) || loan.batchManager !== interestRateDelegate);
 
   return (
     <>
@@ -87,6 +88,7 @@ export function PanelUpdateRate({
         // “Interest rate”
         field={
           <InterestRateField
+            inputId="input-interest-rate"
             collIndex={loan.collIndex}
             debt={debt.parsed}
             delegate={interestRateDelegate}

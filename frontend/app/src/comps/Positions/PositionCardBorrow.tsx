@@ -1,4 +1,5 @@
 import type { PositionLoanCommitted } from "@/src/types";
+import type { ReactNode } from "react";
 
 import { formatLiquidationRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
@@ -7,10 +8,11 @@ import { getCollToken, shortenTroveId } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconBorrow, StatusDot, StrongCard, TokenIcon } from "@liquity2/uikit";
+import { HFlex, IconBorrow, StatusDot, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
-import { CardRow, CardRows, EditSquare } from "./shared";
+import { PositionCard } from "./PositionCard";
+import { CardRow, CardRows } from "./shared";
 
 export function PositionCardBorrow({
   batchManager,
@@ -18,16 +20,22 @@ export function PositionCardBorrow({
   collIndex,
   deposit,
   interestRate,
+  statusTag,
   troveId,
-}: Pick<
-  PositionLoanCommitted,
-  | "batchManager"
-  | "borrowed"
-  | "collIndex"
-  | "deposit"
-  | "interestRate"
-  | "troveId"
->) {
+}:
+  & Pick<
+    PositionLoanCommitted,
+    | "batchManager"
+    | "borrowed"
+    | "collIndex"
+    | "deposit"
+    | "interestRate"
+    | "troveId"
+  >
+  & {
+    statusTag?: ReactNode;
+  })
+{
   const token = getCollToken(collIndex);
   const collateralPriceUsd = usePrice(token?.symbol ?? null);
 
@@ -52,7 +60,7 @@ export function PositionCardBorrow({
       legacyBehavior
       passHref
     >
-      <StrongCard
+      <PositionCard
         title={title.join("\n")}
         heading={
           <div
@@ -60,7 +68,7 @@ export function PositionCardBorrow({
               display: "flex",
               alignItems: "center",
               gap: 8,
-              color: "strongSurfaceContent",
+              color: "positionContent",
             })}
           >
             <div
@@ -71,10 +79,19 @@ export function PositionCardBorrow({
             >
               <IconBorrow size={16} />
             </div>
-            USDaf loan
+            <div>USDaf loan</div>
+            {statusTag}
           </div>
         }
-        contextual={<EditSquare />}
+        contextual={
+          <div
+            className={css({
+              color: "positionContent",
+            })}
+          >
+            <IconBorrow size={32} />
+          </div>
+        }
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
@@ -112,7 +129,7 @@ export function PositionCardBorrow({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContentAlt",
+                      color: "positionContentAlt",
                     })}
                   >
                     LTV
@@ -148,7 +165,7 @@ export function PositionCardBorrow({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     {formatLiquidationRisk(liquidationRisk)}
@@ -172,14 +189,14 @@ export function PositionCardBorrow({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContentAlt",
+                      color: "positionContentAlt",
                     })}
                   >
                     {batchManager ? "Int. rate" : "Interest rate"}
                   </div>
                   <div
                     className={css({
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     {dn.format(dn.mul(interestRate, 100), 2)}%
@@ -219,7 +236,7 @@ export function PositionCardBorrow({
                       flexShrink: 1,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     {redemptionRisk === "low" ? "Low" : redemptionRisk === "medium" ? "Medium" : "High"} redemption risk

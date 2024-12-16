@@ -2,7 +2,7 @@ import type { CollateralToken } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ComponentPropsWithoutRef } from "react";
 
-import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALLOWED } from "@/src/constants";
+import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALLOWED_RATIO } from "@/src/constants";
 import content from "@/src/content";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
@@ -18,7 +18,7 @@ import { roundToDecimal } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import { HFlex, InfoTooltip, InputField, lerp, norm, Slider } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 export function LeverageField({
   collPrice,
@@ -27,6 +27,7 @@ export function LeverageField({
   deposit,
   drawer,
   highRiskLeverageFactor,
+  inputId: inputIdFromProps,
   leverageFactor,
   liquidationPriceField,
   liquidationRisk,
@@ -37,11 +38,17 @@ export function LeverageField({
 }: ReturnType<typeof useLeverageField> & {
   disabled?: boolean;
   drawer?: ComponentPropsWithoutRef<typeof InputField>["drawer"];
+  inputId?: string;
   onDrawerClose?: ComponentPropsWithoutRef<typeof InputField>["onDrawerClose"];
 }) {
+  const autoInputId = useId();
+  const inputId = inputIdFromProps ?? autoInputId;
+
   const isDepositNegative = !deposit || dn.lt(deposit, 0);
+
   return (
     <InputField
+      id={inputId}
       secondarySpacing={16}
       disabled={isDepositNegative}
       drawer={drawer}
@@ -144,7 +151,7 @@ export function useLeverageField({
   collPrice,
   collToken,
   depositPreLeverage,
-  maxLtvAllowedRatio = MAX_LTV_ALLOWED,
+  maxLtvAllowedRatio = MAX_LTV_ALLOWED_RATIO,
   onFocusChange,
 }: {
   collPrice: Dnum;

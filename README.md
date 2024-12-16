@@ -1445,7 +1445,9 @@ Redemptions at this CR may allow for a bit more bad debt to be redistributed whi
 
 ```sh
 git clone git@github.com:liquity/bold.git
-cd bold
+cd bold/contracts
+forge install
+cd ..
 pnpm install
 ```
 
@@ -1462,10 +1464,10 @@ cd contracts
 ./deploy local --open-demo-troves # optionally open troves for the first 8 anvil accounts
 
 # Print the addresses of the deployed contracts:
-pnpm tsx utils/deployment-artifacts-to-app-env.ts deployment-context-latest.json
+pnpm tsx utils/deployment-manifest-to-app-env.ts deployment-manifest.json
 
 # We are now ready to pass the deployed contracts to the app:
-cd ../frontend
+cd ../frontend/app
 
 # Copy the example .env file:
 cp .env .env.local
